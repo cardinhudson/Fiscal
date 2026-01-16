@@ -30,6 +30,18 @@ def _pick_free_port(start_port: int = 8501, max_tries: int = 20) -> int:
         f"Não encontrei uma porta livre entre {start_port} e {start_port + max_tries - 1}."
     )
 
+
+def _wait_for_port(host: str, port: int, timeout_s: float = 10.0) -> bool:
+    """Retorna True quando conseguir conectar em host:port antes do timeout."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=0.5):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
+
 def main():
     """Inicia a aplicação Streamlit."""
     repo_root = Path(__file__).parent
@@ -81,11 +93,20 @@ def main():
         print(f"Tentado: {python_executable}")
         raise
 
-    time.sleep(1.0)
+    _wait_for_port("127.0.0.1", port, timeout_s=10.0)
+
+    opened = False
     try:
-        webbrowser.open(url)
-    except Exception:
-        pass
+        if sys.platform.startswith("win"):
+            os.startfile(url)  # type: ignore[attr-defined]
+            opened = True
+        else:
+            opened = bool(webbrowser.open(url))
+    except Exception as exc:
+        print(f"⚠️ Não consegui abrir automaticamente o navegador: {exc}")
+
+    if not opened:
+        print(f"➡️ Abra manualmente no navegador: {url}")
 
     process.wait()
 
