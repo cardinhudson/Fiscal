@@ -1,6 +1,6 @@
-"""Home Page - Sistema de Análise Fiscal Stellantis.
+"""Sistema de Análise Fiscal - Streamlit.
 
-Abas por planta com resumo de métricas.
+Entrypoint do projeto.
 
 Rodar:
     streamlit run Home.py
@@ -36,8 +36,8 @@ Sistema escalável para análise de dados fiscais das plantas do grupo.
 st.markdown("---")
 
 plantas = get_available_plantas()
-tabs = st.tabs(plantas)
 
+tabs = st.tabs(plantas)
 for i, planta in enumerate(plantas):
     with tabs[i]:
         st.subheader(f"Planta: {planta}")
@@ -55,9 +55,7 @@ for i, planta in enumerate(plantas):
                     st.metric("Total de Registros", f"{summary['total_registros']:,}")
 
                 with col2:
-                    st.metric(
-                        "Valor ICMS Total", f"R$ {summary['total_valor_icms']:,.2f}"
-                    )
+                    st.metric("Valor ICMS Total", f"R$ {summary['total_valor_icms']:,.2f}")
 
                 with col3:
                     st.metric("Anos Disponíveis", summary["anos_totais"])
