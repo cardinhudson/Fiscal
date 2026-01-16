@@ -225,7 +225,7 @@ if indice_selecionado == "👥 Equipe do Projeto":
                     placeholder="https://linkedin.com/in/hudson-cardin", 
                     key="linkedin_hudson_fiscal"
                 )
-                if st.form_submit_button("💾 Salvar informações do Hudson", use_container_width=True):
+                if st.form_submit_button("💾 Salvar informações do Hudson", width='stretch'):
                     dados_equipe['hudson']['nome'] = nome_hudson
                     dados_equipe['hudson']['cargo'] = cargo_hudson
                     dados_equipe['hudson']['empresa'] = empresa_hudson
@@ -315,7 +315,7 @@ if indice_selecionado == "👥 Equipe do Projeto":
                     key="linkedin_lauro_fiscal"
                 )
                 
-                if st.form_submit_button("💾 Salvar informações do Lauro", use_container_width=True):
+                if st.form_submit_button("💾 Salvar informações do Lauro", width='stretch'):
                     dados_equipe['lauro']['nome'] = nome_lauro
                     dados_equipe['lauro']['cargo'] = cargo_lauro
                     dados_equipe['lauro']['empresa'] = empresa_lauro

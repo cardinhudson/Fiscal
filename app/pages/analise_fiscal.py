@@ -208,14 +208,14 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     st.subheader("Evolução Mensal de ICMS")
     fig_month = plot_monthly_chart(df_filtered)
-    st.plotly_chart(fig_month, use_container_width=True, key="chart_mensal")
+    st.plotly_chart(fig_month, width='stretch', key="chart_mensal")
     
     # Tabela mensal
     df_month = get_monthly_totals(df_filtered)
     if not df_month.empty:
         st.dataframe(
             df_month[['mes', 'valor_icms', 'base_icms_1']],
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -270,7 +270,7 @@ with tab2:
             
             st.dataframe(
                 df_tabela_forn, 
-                use_container_width=True, 
+                width='stretch', 
                 hide_index=True,
                 column_config=column_config
             )
@@ -292,11 +292,11 @@ with tab2:
     
     # Gráfico de barras horizontal
     fig_forn = plot_top_fornecedores(df_filtered, top_n=top_n_forn)
-    st.plotly_chart(fig_forn, use_container_width=True, key="chart_fornecedores_bar")
+    st.plotly_chart(fig_forn, width='stretch', key="chart_fornecedores_bar")
     
     # Gráfico de pizza
     fig_forn_pizza = plot_top_fornecedores_pizza(df_filtered, top_n=top_n_forn)
-    st.plotly_chart(fig_forn_pizza, use_container_width=True, key="chart_fornecedores_pizza")
+    st.plotly_chart(fig_forn_pizza, width='stretch', key="chart_fornecedores_pizza")
 
 with tab3:
     st.subheader("Produtos por ICMS")
@@ -358,7 +358,7 @@ with tab3:
             
             st.dataframe(
                 df_tabela_prod, 
-                use_container_width=True, 
+                width='stretch', 
                 hide_index=True,
                 column_config=column_config
             )
@@ -380,11 +380,11 @@ with tab3:
     
     # Gráfico de barras horizontal
     fig_prod = plot_top_produtos(df_filtered, top_n=top_n_prod)
-    st.plotly_chart(fig_prod, use_container_width=True, key="chart_produtos_bar")
+    st.plotly_chart(fig_prod, width='stretch', key="chart_produtos_bar")
     
     # Gráfico de pizza
     fig_prod_pizza = plot_top_produtos_pizza(df_filtered, top_n=top_n_prod)
-    st.plotly_chart(fig_prod_pizza, use_container_width=True, key="chart_produtos_pizza")
+    st.plotly_chart(fig_prod_pizza, width='stretch', key="chart_produtos_pizza")
 
 with tab4:
     st.subheader("Distribuição por CFOP")
@@ -451,7 +451,7 @@ with tab4:
             
             st.dataframe(
                 df_tabela_cfop, 
-                use_container_width=True, 
+                width='stretch', 
                 hide_index=True,
                 column_config=column_config
             )
@@ -473,11 +473,11 @@ with tab4:
     
     # Gráfico de barras horizontal
     fig_cfop = plot_cfop_distribution(df_filtered, top_n=top_n_cfop)
-    st.plotly_chart(fig_cfop, use_container_width=True, key="chart_cfop_bar")
+    st.plotly_chart(fig_cfop, width='stretch', key="chart_cfop_bar")
     
     # Gráfico de pizza
     fig_cfop_pizza = plot_cfop_pizza(df_filtered, top_n=top_n_cfop)
-    st.plotly_chart(fig_cfop_pizza, use_container_width=True, key="chart_cfop_pizza")
+    st.plotly_chart(fig_cfop_pizza, width='stretch', key="chart_cfop_pizza")
 
 with tab5:
     st.subheader("Dados Detalhados")
@@ -503,7 +503,7 @@ with tab5:
     # Tabela completa
     st.dataframe(
         df_filtered,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         height=600
     )

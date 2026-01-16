@@ -113,7 +113,7 @@ with tab1:
         )
         
         # Botão de upload
-        if st.button("📤 Fazer Upload", type="primary", use_container_width=True, key="btn_fazer_upload"):
+        if st.button("📤 Fazer Upload", type="primary", width='stretch', key="btn_fazer_upload"):
             if not planta_upload or not ano_upload:
                 st.error("❌ Selecione/digite a planta e o ano")
             else:
@@ -257,7 +257,7 @@ with tab2:
         """)
     
     with col2:
-        if st.button("🚀 Processar", type="primary", use_container_width=True, key="btn_processar"):
+        if st.button("🚀 Processar", type="primary", width='stretch', key="btn_processar"):
             if not raw_path.exists():
                 st.error("❌ Diretório de entrada não existe!")
             else:

@@ -20,7 +20,7 @@ def get_monthly_totals(df):
     if df.empty or 'data_fiscal' not in df.columns:
         return pd.DataFrame()
     
-    df_month = df.groupby(pd.Grouper(key='data_fiscal', freq='M')).agg({
+    df_month = df.groupby(pd.Grouper(key='data_fiscal', freq='ME')).agg({
         'valor_icms': 'sum',
         'base_icms_1': 'sum'
     }).reset_index()
@@ -286,6 +286,7 @@ def plot_top_produtos(df, top_n=10):
         titulo = f'Top {top_n} Produtos por ICMS'
     
     # Truncar descrição para visualização
+    df_top = df_top.copy()
     df_top['descricao_curta'] = df_top['descricao'].str[:40]
     
     fig = px.bar(
@@ -444,6 +445,7 @@ def plot_cfop_distribution(df, top_n=10):
         titulo = f'Top {top_n} CFOPs por ICMS'
     
     # Converter CFOP para string para evitar interpretação numérica
+    df_top = df_top.copy()
     df_top['cfop'] = df_top['cfop'].astype(str)
     
     fig = px.bar(
