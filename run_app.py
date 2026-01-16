@@ -49,7 +49,7 @@ def main():
     ]
 
     try:
-        process = subprocess.Popen(cmd)
+        process = subprocess.Popen(cmd, cwd=str(repo_root))
     except FileNotFoundError:
         print("❌ Não consegui executar o Python configurado.")
         print(f"Tentado: {python_executable}")
