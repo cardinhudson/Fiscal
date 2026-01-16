@@ -7,6 +7,8 @@ Observação:
   para evitar erros de dependências quando você roda com um Python global.
 """
 
+import os
+import shutil
 import subprocess
 import sys
 import time
@@ -48,8 +50,16 @@ def main():
         "localhost",
     ]
 
+    env = os.environ.copy()
+    git_exe = shutil.which("git")
+    if git_exe:
+        env.setdefault("GIT_PYTHON_GIT_EXECUTABLE", git_exe)
+        git_dir = str(Path(git_exe).parent)
+        if git_dir and git_dir not in env.get("PATH", ""):
+            env["PATH"] = f"{git_dir}{os.pathsep}{env.get('PATH', '')}"
+
     try:
-        process = subprocess.Popen(cmd, cwd=str(repo_root))
+        process = subprocess.Popen(cmd, cwd=str(repo_root), env=env)
     except FileNotFoundError:
         print("❌ Não consegui executar o Python configurado.")
         print(f"Tentado: {python_executable}")
