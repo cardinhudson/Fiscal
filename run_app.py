@@ -8,12 +8,27 @@ Observação:
 """
 
 import os
+import socket
 import shutil
 import subprocess
 import sys
 import time
 import webbrowser
 from pathlib import Path
+
+
+def _pick_free_port(start_port: int = 8501, max_tries: int = 20) -> int:
+    for port in range(start_port, start_port + max_tries):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                sock.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(
+        f"Não encontrei uma porta livre entre {start_port} e {start_port + max_tries - 1}."
+    )
 
 def main():
     """Inicia a aplicação Streamlit."""
@@ -32,7 +47,8 @@ def main():
     
     print("🚀 Iniciando Sistema de Análise Fiscal Stellantis...")
     print(f"📂 Arquivo principal: {app_path}")
-    url = "http://localhost:8501"
+    port = _pick_free_port(8501)
+    url = f"http://localhost:{port}"
     print(f"🌐 Abrirá em: {url}")
     if preferred_python:
         print(f"🐍 Usando Python do venv: {python_executable}")
@@ -45,7 +61,7 @@ def main():
         "run",
         str(app_path),
         "--server.port",
-        "8501",
+        str(port),
         "--server.address",
         "localhost",
     ]
