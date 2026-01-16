@@ -76,10 +76,17 @@ data_raw/Goiana/2026/janeiro.xlsx
 ### 2. Iniciar a aplicação
 
 ```powershell
-streamlit run Home.py
+# Opção A (recomendado): abre o navegador automaticamente
+python run_app.py
+
+# Opção B (convencional): roda direto pelo Streamlit
+# (se você NÃO ativou o venv, use python -m streamlit)
+python -m streamlit run Home.py
 ```
 
-A aplicação abrirá em: `http://localhost:8501`
+Se o navegador não abrir sozinho, copie a URL que aparece no terminal (ex.: `http://localhost:8501`).
+
+> Observação: o entrypoint do projeto é `Home.py` (na raiz). Se você rodar `streamlit run APP.py`, vai falhar porque esse arquivo não existe.
 
 ### 3. Processar dados
 
