@@ -492,12 +492,13 @@ elif indice_selecionado == "🏗️ Arquitetura e Estrutura":
         st.markdown("""
         ```
         Fiscal/
-        ├── app/                          # Aplicação Streamlit
-        │   ├── Home.py                   # Página inicial com tabs por planta
+        ├── Home.py                       # Página inicial com tabs por planta
+        ├── pages/                        # Páginas (Streamlit multipage)
+        │   ├── analise_fiscal.py         # Análise com filtros e gráficos
+        │   ├── extracao.py               # Upload e processamento
+        │   └── documentacao.py           # Esta documentação
+        ├── app/                          # Módulos internos (utils e páginas legadas)
         │   ├── pages/
-        │   │   ├── analise_fiscal.py     # Análise com filtros e gráficos
-        │   │   ├── extracao.py           # Upload e processamento
-        │   │   └── documentacao.py       # Esta documentação
         │   └── utils/
         │       ├── load_data.py          # Cache de dados
         │       └── transform_data.py     # Transformações e gráficos

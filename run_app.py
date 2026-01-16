@@ -1,6 +1,6 @@
 """Script de inicialização rápida do sistema.
 
-Executa a aplicação Streamlit (app/Home.py).
+Executa a aplicação Streamlit (Home.py).
 
 Observação:
 - Se existir um ambiente virtual em .venv, este script dá preferência a ele,
@@ -45,7 +45,7 @@ def _wait_for_port(host: str, port: int, timeout_s: float = 10.0) -> bool:
 def main():
     """Inicia a aplicação Streamlit."""
     repo_root = Path(__file__).parent
-    app_path = repo_root / "app" / "Home.py"
+    app_path = repo_root / "Home.py"
 
     venv_python_windows = repo_root / ".venv" / "Scripts" / "python.exe"
     venv_python_posix = repo_root / ".venv" / "bin" / "python"
