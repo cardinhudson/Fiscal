@@ -1,0 +1,2 @@
+# Mantém a pasta data_parquet versionada.
+# Arquivos .parquet podem ser versionados (Excel continua ignorado).

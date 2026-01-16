@@ -1,0 +1,3 @@
+# Mantém a pasta data_raw versionada.
+# Coloque aqui os Excel em data_raw/<Planta>/<Ano>/...
+# (arquivos Excel são ignorados pelo .gitignore)
