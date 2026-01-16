@@ -36,8 +36,7 @@ env/
 # Streamlit
 .streamlit/
 
-# Data files (considere se deve commitar ou não)
-# Arquivos Excel
+# Arquivos Excel (não incluir no repositório)
 *.xlsx
 *.xls
 *.xlsm
@@ -45,11 +44,6 @@ env/
 *.xltx
 *.xltm
 *.xlam
-data_raw/**/*.xls
-data_raw/**/*.xlsx
-
-# Arquivos Parquet
-data_parquet/**/*.parquet
 
 # Logs
 *.log
