@@ -34,7 +34,9 @@ env/
 *~
 
 # Streamlit
-.streamlit/
+# (Útil para deploy/config. Mantemos versionado quando existir.)
+# Obs: secrets NÃO devem ser commitados.
+.streamlit/secrets.toml
 
 # Data files (considere se deve commitar ou não)
 # Arquivos Excel
@@ -49,7 +51,7 @@ data_raw/**/*.xls
 data_raw/**/*.xlsx
 
 # Arquivos Parquet
-data_parquet/**/*.parquet
+# (Mantidos no Git conforme solicitado)
 
 # Logs
 *.log
