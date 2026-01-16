@@ -1,0 +1,12 @@
+{
+    "plantas": [
+        "Porto Real",
+        "Goiana",
+        "Betim",
+        "Jaboatao",
+        "PWT",
+        "Transmissoes"
+    ],
+    "anos_iniciais": [2025, 2026],
+    "anos_validos": "auto"
+}
