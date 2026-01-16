@@ -8,6 +8,22 @@ Rodar:
 
 import streamlit as st
 
+
+def _ensure_running_via_streamlit() -> None:
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+        if get_script_run_ctx() is None:
+            print("Este app deve ser iniciado via Streamlit:")
+            print("  C:/GIT/Fiscal/.venv/Scripts/python.exe -m streamlit run Home.py")
+            raise SystemExit(0)
+    except Exception:
+        # Se a API interna mudar, não bloqueia a execução.
+        return
+
+
+_ensure_running_via_streamlit()
+
 from app.utils.load_data import get_available_plantas, load_summary
 
 
