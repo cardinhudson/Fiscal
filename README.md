@@ -76,7 +76,7 @@ data_raw/Goiana/2026/janeiro.xlsx
 ### 2. Iniciar a aplicação
 
 ```powershell
-streamlit run app/Home.py
+streamlit run Home.py
 ```
 
 A aplicação abrirá em: `http://localhost:8501`
