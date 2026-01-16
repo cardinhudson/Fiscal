@@ -76,7 +76,12 @@ data_raw/Goiana/2026/janeiro.xlsx
 ### 2. Iniciar a aplicação
 
 ```powershell
-streamlit run Home.py
+# IMPORTANTE (Windows): evite usar `streamlit` global do Python fora do venv.
+# Use o Python do venv para garantir que Streamlit + GitPython sejam os do projeto:
+C:/GIT/Fiscal/.venv/Scripts/python.exe -m streamlit run Home.py
+
+# Alternativa: atalho do projeto
+./run.ps1
 ```
 
 Se o navegador não abrir sozinho, copie a URL que aparece no terminal (ex.: `http://localhost:8501`).
