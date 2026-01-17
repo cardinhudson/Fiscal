@@ -46,17 +46,10 @@ env/
 *.xltx
 *.xltm
 *.xlam
-<<<<<<< HEAD
-=======
-data_raw/**/*.xls
-data_raw/**/*.xlsx
 
-# Arquivos Parquet
-# (Mantidos no Git conforme solicitado)
->>>>>>> 6d008dbd96a93024dfe7e366acdc97a594d5bad6
-
-# Logs
-*.log
+# Logs (manter apenas estrutura, não os arquivos)
+logs/*.log
+logs/extraction_history.json
 
 # OS
 .DS_Store

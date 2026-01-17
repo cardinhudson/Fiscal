@@ -30,12 +30,14 @@ def get_monthly_totals(df):
     return df_month
 
 
-def plot_monthly_chart(df):
+def plot_monthly_chart(df, divisor=1, sufixo=""):
     """
     Cria gráfico de barras mensal de VALOR_ICMS.
     
     Args:
         df: DataFrame com dados fiscais
+        divisor: Divisor para escala (1, 1e3, 1e6, 1e9)
+        sufixo: Sufixo para label ("", "mil", "mi", "bi")
         
     Returns:
         Figura Plotly
@@ -45,17 +47,23 @@ def plot_monthly_chart(df):
     if df_month.empty:
         return go.Figure()
     
+    # Aplicar divisor
+    df_month['valor_icms_scaled'] = df_month['valor_icms'] / divisor
+    
     # Formatar mês como "jan/2025", "fev/2025"
     df_month['mes_formatado'] = df_month['data_fiscal'].dt.strftime('%b/%Y').str.lower()
+    
+    # Label com sufixo
+    label_y = f'Valor ICMS (R$ {sufixo})' if sufixo else 'Valor ICMS (R$)'
     
     fig = px.bar(
         df_month,
         x='mes_formatado',
-        y='valor_icms',
+        y='valor_icms_scaled',
         title='ICMS por Mês',
-        labels={'mes_formatado': 'Mês', 'valor_icms': 'Valor ICMS (R$)'},
-        text='valor_icms',
-        color='valor_icms',
+        labels={'mes_formatado': 'Mês', 'valor_icms_scaled': label_y},
+        text='valor_icms_scaled',
+        color='valor_icms_scaled',
         color_continuous_scale=['#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6', '#42a5f5', '#1e88e5', '#1565c0', '#0d47a1', '#01579b']
     )
     
@@ -68,7 +76,7 @@ def plot_monthly_chart(df):
     
     fig.update_layout(
         xaxis_title='Mês',
-        yaxis_title='Valor ICMS (R$)',
+        yaxis_title=label_y,
         showlegend=False,
         hovermode='x unified',
         uniformtext_minsize=8,
@@ -106,13 +114,15 @@ def get_top_fornecedores(df, top_n=10):
     return df_top
 
 
-def plot_top_fornecedores(df, top_n=10):
+def plot_top_fornecedores(df, top_n=10, divisor=1, sufixo=""):
     """
     Cria gráfico de barras horizontais com top fornecedores.
     
     Args:
         df: DataFrame com dados fiscais
         top_n: Número de fornecedores no ranking (ou 'total' para todos)
+        divisor: Divisor para escala (1, 1e3, 1e6, 1e9)
+        sufixo: Sufixo para label ("", "mil", "mi", "bi")
         
     Returns:
         Figura Plotly
@@ -135,14 +145,20 @@ def plot_top_fornecedores(df, top_n=10):
         df_top = df_all.head(top_n)
         titulo = f'Top {top_n} Fornecedores por ICMS'
     
+    # Aplicar divisor
+    df_top['valor_icms_scaled'] = df_top['valor_icms'] / divisor
+    
+    # Label com sufixo
+    label_y = f'Valor ICMS (R$ {sufixo})' if sufixo else 'Valor ICMS (R$)'
+    
     fig = px.bar(
         df_top,
         x='razao_social',
-        y='valor_icms',
+        y='valor_icms_scaled',
         title=titulo,
-        labels={'razao_social': 'Fornecedor', 'valor_icms': 'Valor ICMS (R$)'},
-        text='valor_icms',
-        color='valor_icms',
+        labels={'razao_social': 'Fornecedor', 'valor_icms_scaled': label_y},
+        text='valor_icms_scaled',
+        color='valor_icms_scaled',
         color_continuous_scale=['#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6', '#42a5f5', '#1e88e5', '#1565c0', '#0d47a1', '#01579b']
     )
     
@@ -155,7 +171,7 @@ def plot_top_fornecedores(df, top_n=10):
     
     fig.update_layout(
         xaxis_title='Fornecedor',
-        yaxis_title='Valor ICMS (R$)',
+        yaxis_title=label_y,
         showlegend=False,
         xaxis={'categoryorder': 'total descending'},
         xaxis_tickangle=-45,
@@ -255,13 +271,15 @@ def get_top_produtos(df, top_n=10):
     return df_top
 
 
-def plot_top_produtos(df, top_n=10):
+def plot_top_produtos(df, top_n=10, divisor=1, sufixo=""):
     """
     Cria gráfico de barras horizontais com top produtos.
     
     Args:
         df: DataFrame com dados fiscais
         top_n: Número de produtos no ranking (ou 'total' para todos)
+        divisor: Divisor para escala (1, 1e3, 1e6, 1e9)
+        sufixo: Sufixo para label ("", "mil", "mi", "bi")
         
     Returns:
         Figura Plotly
@@ -288,15 +306,19 @@ def plot_top_produtos(df, top_n=10):
     # Truncar descrição para visualização
     df_top = df_top.copy()
     df_top['descricao_curta'] = df_top['descricao'].str[:40]
+    df_top['valor_icms_scaled'] = df_top['valor_icms'] / divisor
+    
+    # Label com sufixo
+    label_y = f'Valor ICMS (R$ {sufixo})' if sufixo else 'Valor ICMS (R$)'
     
     fig = px.bar(
         df_top,
         x='descricao_curta',
-        y='valor_icms',
+        y='valor_icms_scaled',
         title=titulo,
-        labels={'descricao_curta': 'Produto', 'valor_icms': 'Valor ICMS (R$)'},
-        text='valor_icms',
-        color='valor_icms',
+        labels={'descricao_curta': 'Produto', 'valor_icms_scaled': label_y},
+        text='valor_icms_scaled',
+        color='valor_icms_scaled',
         color_continuous_scale=['#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6', '#42a5f5', '#1e88e5', '#1565c0', '#0d47a1', '#01579b']
     )
     
@@ -309,7 +331,7 @@ def plot_top_produtos(df, top_n=10):
     
     fig.update_layout(
         xaxis_title='Produto',
-        yaxis_title='Valor ICMS (R$)',
+        yaxis_title=label_y,
         showlegend=False,
         xaxis={'categoryorder': 'total descending'},
         xaxis_tickangle=-45,
@@ -411,13 +433,15 @@ def get_cfop_distribution(df):
     return df_cfop
 
 
-def plot_cfop_distribution(df, top_n=10):
+def plot_cfop_distribution(df, top_n=10, divisor=1, sufixo=""):
     """
     Cria gráfico de barras horizontais com CFOPs.
     
     Args:
         df: DataFrame com dados fiscais
         top_n: Número de CFOPs no ranking (ou 'total' para todos)
+        divisor: Divisor para escala (1, 1e3, 1e6, 1e9)
+        sufixo: Sufixo para label ("", "mil", "mi", "bi")
         
     Returns:
         Figura Plotly
@@ -447,15 +471,19 @@ def plot_cfop_distribution(df, top_n=10):
     # Converter CFOP para string para evitar interpretação numérica
     df_top = df_top.copy()
     df_top['cfop'] = df_top['cfop'].astype(str)
+    df_top['valor_icms_scaled'] = df_top['valor_icms'] / divisor
+    
+    # Label com sufixo
+    label_y = f'Valor ICMS (R$ {sufixo})' if sufixo else 'Valor ICMS (R$)'
     
     fig = px.bar(
         df_top,
         x='cfop',
-        y='valor_icms',
+        y='valor_icms_scaled',
         title=titulo,
-        labels={'cfop': 'CFOP', 'valor_icms': 'Valor ICMS (R$)'},
-        text='valor_icms',
-        color='valor_icms',
+        labels={'cfop': 'CFOP', 'valor_icms_scaled': label_y},
+        text='valor_icms_scaled',
+        color='valor_icms_scaled',
         color_continuous_scale=['#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6', '#42a5f5', '#1e88e5', '#1565c0', '#0d47a1', '#01579b']
     )
     
@@ -468,7 +496,7 @@ def plot_cfop_distribution(df, top_n=10):
     
     fig.update_layout(
         xaxis_title='CFOP',
-        yaxis_title='Valor ICMS (R$)',
+        yaxis_title=label_y,
         showlegend=False,
         xaxis={'categoryorder': 'total descending', 'type': 'category'},
         xaxis_tickfont=dict(size=10),

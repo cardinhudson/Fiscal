@@ -38,6 +38,32 @@ st.set_page_config(
 
 st.title("📊 Análise Fiscal")
 
+# Seletor de Unidade Monetária com radio buttons
+st.markdown("---")
+unidade_monetaria = st.radio(
+    "💰 **Fator conversão:**",
+    ["💵 Reais", "📊 Mil (10³)", "📈 Milhões (10⁶)", "🚀 Bilhões (10⁹)"],
+    horizontal=True,
+    index=2,
+    key="unidade_monetaria"
+)
+
+# Definir divisor baseado na unidade selecionada
+if "Mil" in unidade_monetaria:
+    divisor = 1e3
+    sufixo = "mil"
+elif "Milhões" in unidade_monetaria:
+    divisor = 1e6
+    sufixo = "mi"
+elif "Bilhões" in unidade_monetaria:
+    divisor = 1e9
+    sufixo = "bi"
+else:
+    divisor = 1
+    sufixo = ""
+
+st.markdown("---")
+
 # Sidebar - Filtros principais
 st.sidebar.header("Filtros Principais")
 
@@ -175,15 +201,17 @@ with col1:
 
 with col2:
     if 'valor_icms' in df_filtered.columns:
-        total_icms = df_filtered['valor_icms'].sum()
-        st.metric("Total ICMS", f"R$ {total_icms:,.2f}")
+        total_icms = df_filtered['valor_icms'].sum() / divisor
+        label_icms = f"Total ICMS ({sufixo})" if sufixo else "Total ICMS"
+        st.metric(label_icms, f"R$ {total_icms:,.2f}")
     else:
         st.metric("Total ICMS", "N/A")
 
 with col3:
     if 'base_icms_1' in df_filtered.columns:
-        total_base = df_filtered['base_icms_1'].sum()
-        st.metric("Base ICMS", f"R$ {total_base:,.2f}")
+        total_base = df_filtered['base_icms_1'].sum() / divisor
+        label_base = f"Base ICMS ({sufixo})" if sufixo else "Base ICMS"
+        st.metric(label_base, f"R$ {total_base:,.2f}")
     else:
         st.metric("Base ICMS", "N/A")
 
@@ -207,14 +235,18 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 with tab1:
     st.subheader("Evolução Mensal de ICMS")
-    fig_month = plot_monthly_chart(df_filtered)
+    fig_month = plot_monthly_chart(df_filtered, divisor=divisor, sufixo=sufixo)
     st.plotly_chart(fig_month, width='stretch', key="chart_mensal")
     
     # Tabela mensal
     df_month = get_monthly_totals(df_filtered)
     if not df_month.empty:
+        # Aplicar divisor na tabela
+        df_month_display = df_month.copy()
+        df_month_display['valor_icms'] = df_month_display['valor_icms'] / divisor
+        df_month_display['base_icms_1'] = df_month_display['base_icms_1'] / divisor
         st.dataframe(
-            df_month[['mes', 'valor_icms', 'base_icms_1']],
+            df_month_display[['mes', 'valor_icms', 'base_icms_1']],
             width='stretch',
             hide_index=True
         )
@@ -291,7 +323,7 @@ with tab2:
             st.info("Sem dados para exibir.")
     
     # Gráfico de barras horizontal
-    fig_forn = plot_top_fornecedores(df_filtered, top_n=top_n_forn)
+    fig_forn = plot_top_fornecedores(df_filtered, top_n=top_n_forn, divisor=divisor, sufixo=sufixo)
     st.plotly_chart(fig_forn, width='stretch', key="chart_fornecedores_bar")
     
     # Gráfico de pizza
@@ -379,7 +411,7 @@ with tab3:
             st.info("Sem dados para exibir.")
     
     # Gráfico de barras horizontal
-    fig_prod = plot_top_produtos(df_filtered, top_n=top_n_prod)
+    fig_prod = plot_top_produtos(df_filtered, top_n=top_n_prod, divisor=divisor, sufixo=sufixo)
     st.plotly_chart(fig_prod, width='stretch', key="chart_produtos_bar")
     
     # Gráfico de pizza
@@ -472,7 +504,7 @@ with tab4:
             st.info("Sem dados para exibir.")
     
     # Gráfico de barras horizontal
-    fig_cfop = plot_cfop_distribution(df_filtered, top_n=top_n_cfop)
+    fig_cfop = plot_cfop_distribution(df_filtered, top_n=top_n_cfop, divisor=divisor, sufixo=sufixo)
     st.plotly_chart(fig_cfop, width='stretch', key="chart_cfop_bar")
     
     # Gráfico de pizza
