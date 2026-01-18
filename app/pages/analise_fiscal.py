@@ -11,6 +11,8 @@ from pathlib import Path
 # Adicionar diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from versionamento import obter_versao_atual, verificar_mudancas_paginas
+from app.utils.page_components import renderizar_cabecalho, renderizar_rodape
 from app.utils.load_data import load_data, get_available_plantas, get_available_anos
 from app.utils.transform_data import (
     plot_monthly_chart,
@@ -29,12 +31,18 @@ from app.utils.transform_data import (
     get_tabela_sumarizada_cfop
 )
 
-# Configuração da página
+# Configurar página
 st.set_page_config(
     page_title="Análise Fiscal",
     page_icon="📊",
     layout="wide"
 )
+
+# Verificar mudanças e incrementar versão se necessário
+verificar_mudancas_paginas()
+
+# Renderizar cabeçalho
+renderizar_cabecalho()
 
 st.title("📊 Análise Fiscal")
 
@@ -548,3 +556,8 @@ with tab5:
         hide_index=True,
         height=600
     )
+
+# ==========================================
+# RODAPÉ
+# ==========================================
+renderizar_rodape()

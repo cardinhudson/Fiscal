@@ -10,6 +10,8 @@ import shutil
 # Adicionar diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from versionamento import obter_versao_atual, verificar_mudancas_paginas
+from app.utils.page_components import renderizar_cabecalho, renderizar_rodape
 from extraction.extracao import (
     load_plantas,
     load_anos,
@@ -18,12 +20,18 @@ from extraction.extracao import (
     add_planta
 )
 
-# Configuração da página
+# Configurar página
 st.set_page_config(
     page_title="Extração de Dados",
     page_icon="📤",
     layout="wide"
 )
+
+# Verificar mudanças e incrementar versão se necessário
+verificar_mudancas_paginas()
+
+# Renderizar cabeçalho
+renderizar_cabecalho()
 
 st.title("📤 Extração de Dados")
 st.markdown("Faça upload e processe arquivos Excel para formato Parquet otimizado")
@@ -920,4 +928,9 @@ with tab3:
         
         **Ou** use a aba **"🏠 Home"** para editar diretamente no navegador!
         """)
+
+# ==========================================
+# RODAPÉ
+# ==========================================
+renderizar_rodape()
 
