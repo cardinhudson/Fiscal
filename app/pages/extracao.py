@@ -175,37 +175,131 @@ with tab1:
 with tab2:
     st.header("Processar Arquivos Excel")
     
-    # Opção de modo de processamento
-    st.subheader("🎯 Modo de Processamento")
-    modo_processamento = st.radio(
-        "Escolha o modo:",
-        options=["📄 Uma planta/ano específico", "📅 Todos os anos de uma planta", "🌐 Todas as plantas e anos"],
-        index=0,
-        horizontal=True,
-        help="Selecione como deseja processar os arquivos"
-    )
+    st.subheader("🎯 Seleção de Processamento")
     
-    st.markdown("---")
+    col1, col2 = st.columns(2)
     
-    if modo_processamento == "📄 Uma planta/ano específico":
-        # Interface normal - uma planta por vez
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            plantas = load_plantas()
-            planta_proc = st.selectbox("Selecione a Planta", plantas, key="proc_planta")
-        
-        with col2:
+    with col1:
+        plantas = load_plantas()
+        plantas_opcoes = ["Todos"] + plantas
+        planta_proc = st.selectbox(
+            "Selecione a Planta",
+            plantas_opcoes,
+            key="proc_planta",
+            help="Selecione uma planta específica ou 'Todos' para processar todas"
+        )
+    
+    with col2:
+        if planta_proc == "Todos":
+            # Se todas as plantas, mostrar "Todos" para anos também
+            anos_opcoes = ["Todos"]
+            ano_proc = st.selectbox(
+                "Selecione o Ano",
+                anos_opcoes,
+                key="proc_ano",
+                help="Com 'Todos' nas plantas, processa todos os anos de todas as plantas"
+            )
+        else:
+            # Se planta específica, carregar anos dela + opção "Todos"
             anos = load_anos(planta_proc)
             if not anos:
                 st.warning(f"Nenhum ano disponível para {planta_proc}")
                 st.stop()
-            ano_proc = st.selectbox("Selecione o Ano", anos, index=len(anos)-1 if anos else 0, key="proc_ano")
+            anos_opcoes = ["Todos"] + anos
+            ano_proc = st.selectbox(
+                "Selecione o Ano",
+                anos_opcoes,
+                index=len(anos_opcoes)-1 if anos_opcoes else 0,
+                key="proc_ano",
+                help="Selecione um ano específico ou 'Todos' para processar todos os anos desta planta"
+            )
+    
+    st.markdown("---")
+    
+    # Mostrar informações baseado na seleção
+    base_path = Path(__file__).parent.parent.parent
+    
+    if planta_proc == "Todos" and ano_proc == "Todos":
+        # Todas as plantas e todos os anos
+        st.info("### 🌐 Modo: Processar Todas as Plantas e Anos")
+        st.markdown("""
+        O sistema irá processar **automaticamente** todas as plantas e anos que possuem arquivos Excel em `data_raw/`.
         
-        st.markdown("---")
+        **Ordem de processamento:**
+        1. Busca todas as pastas em data_raw/
+        2. Para cada planta, busca todos os anos disponíveis
+        3. Valida e processa cada combinação planta/ano
+        4. Gera consolidações automaticamente
+        """)
         
-        # Informações sobre diretórios
-        base_path = Path(__file__).parent.parent.parent
+        # Descobrir plantas e anos disponíveis
+        data_raw = base_path / "data_raw"
+        plantas_disponiveis = []
+        if data_raw.exists():
+            for planta_dir in data_raw.iterdir():
+                if planta_dir.is_dir() and planta_dir.name != "Códigos Mastersaf e Sapiens.xlsx":
+                    anos_planta = []
+                    for ano_dir in planta_dir.iterdir():
+                        if ano_dir.is_dir():
+                            excel_files = [f for f in list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls")) 
+                                         if not f.name.startswith("~$") and not f.name.startswith(".")]
+                            if excel_files:
+                                try:
+                                    anos_planta.append(int(ano_dir.name))
+                                except ValueError:
+                                    continue
+                    if anos_planta:
+                        plantas_disponiveis.append({
+                            'planta': planta_dir.name,
+                            'anos': sorted(anos_planta)
+                        })
+        
+        if plantas_disponiveis:
+            st.success(f"✅ {len(plantas_disponiveis)} planta(s) encontrada(s) com dados")
+            
+            # Mostrar resumo em tabela
+            with st.expander("📋 Ver detalhes do que será processado"):
+                for item in plantas_disponiveis:
+                    st.markdown(f"**{item['planta']}**: {', '.join(map(str, item['anos']))}")
+        else:
+            st.warning("⚠️ Nenhuma planta com dados encontrada em data_raw/")
+            st.stop()
+    
+    elif planta_proc != "Todos" and ano_proc == "Todos":
+        # Uma planta específica, todos os anos
+        st.info(f"### 📅 Modo: Processar Todos os Anos de {planta_proc}")
+        
+        # Descobrir anos disponíveis para esta planta
+        data_raw = base_path / "data_raw" / planta_proc
+        anos_disponiveis = []
+        if data_raw.exists():
+            for ano_dir in data_raw.iterdir():
+                if ano_dir.is_dir():
+                    excel_files = [f for f in list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls")) 
+                                 if not f.name.startswith("~$") and not f.name.startswith(".")]
+                    if excel_files:
+                        try:
+                            anos_disponiveis.append(int(ano_dir.name))
+                        except ValueError:
+                            continue
+        
+        if anos_disponiveis:
+            anos_disponiveis = sorted(anos_disponiveis)
+            st.success(f"✅ {len(anos_disponiveis)} ano(s) com dados encontrado(s): {', '.join(map(str, anos_disponiveis))}")
+            
+            # Mostrar informações sobre cada ano
+            with st.expander("📋 Ver detalhes de cada ano"):
+                for ano in anos_disponiveis:
+                    ano_path = base_path / "data_raw" / planta_proc / str(ano)
+                    excel_files = [f for f in list(ano_path.glob("*.xlsx")) + list(ano_path.glob("*.xls")) 
+                                 if not f.name.startswith("~$") and not f.name.startswith(".")]
+                    st.markdown(f"**{ano}**: {len(excel_files)} arquivo(s) Excel")
+        else:
+            st.warning(f"⚠️ Nenhum ano com dados encontrado para {planta_proc}")
+            st.stop()
+    
+    else:
+        # Uma planta e um ano específico
         raw_path = base_path / "data_raw" / planta_proc / str(ano_proc)
         parquet_path = base_path / "data_parquet" / planta_proc / str(ano_proc)
         
@@ -215,7 +309,8 @@ with tab2:
             st.info(f"**Diretório de entrada (Excel):**\n\n`{raw_path}`")
             
             if raw_path.exists():
-                excel_files = list(raw_path.glob("*.xlsx")) + list(raw_path.glob("*.xls"))
+                excel_files = [f for f in list(raw_path.glob("*.xlsx")) + list(raw_path.glob("*.xls")) 
+                             if not f.name.startswith("~$") and not f.name.startswith(".")]
                 st.success(f"✅ {len(excel_files)} arquivo(s) Excel encontrado(s)")
                 
                 # Mostrar últimas modificações
@@ -246,90 +341,6 @@ with tab2:
             else:
                 st.info("ℹ️ Diretório será criado ao processar")
     
-    elif modo_processamento == "📅 Todos os anos de uma planta":
-        # Interface para selecionar planta e processar todos os anos
-        plantas = load_plantas()
-        planta_proc = st.selectbox("Selecione a Planta", plantas, key="proc_planta_all_anos")
-        
-        st.markdown("---")
-        
-        # Descobrir anos disponíveis para esta planta
-        base_path = Path(__file__).parent.parent.parent
-        data_raw = base_path / "data_raw" / planta_proc
-        
-        anos_disponiveis = []
-        if data_raw.exists():
-            for ano_dir in data_raw.iterdir():
-                if ano_dir.is_dir():
-                    excel_files = list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls"))
-                    if excel_files:
-                        try:
-                            anos_disponiveis.append(int(ano_dir.name))
-                        except ValueError:
-                            continue
-        
-        if anos_disponiveis:
-            anos_disponiveis = sorted(anos_disponiveis)
-            st.success(f"✅ {len(anos_disponiveis)} ano(s) com dados encontrado(s): {', '.join(map(str, anos_disponiveis))}")
-            
-            # Mostrar informações sobre cada ano
-            with st.expander("📋 Ver detalhes de cada ano"):
-                for ano in anos_disponiveis:
-                    ano_path = base_path / "data_raw" / planta_proc / str(ano)
-                    excel_files = list(ano_path.glob("*.xlsx")) + list(ano_path.glob("*.xls"))
-                    st.markdown(f"**{ano}**: {len(excel_files)} arquivo(s) Excel")
-        else:
-            st.warning(f"⚠️ Nenhum ano com dados encontrado para {planta_proc}")
-            st.stop()
-    
-    else:  # modo_processamento == "🌐 Todas as plantas e anos"
-        # Modo processar todas - mostrar resumo
-        st.markdown("---")
-        st.info("### 🌐 Modo: Processar Todas as Plantas")
-        st.markdown("""
-        O sistema irá processar **automaticamente** todas as plantas e anos que possuem arquivos Excel em `data_raw/`.
-        
-        **Ordem de processamento:**
-        1. Busca todas as pastas em data_raw/
-        2. Para cada planta, busca todos os anos disponíveis
-        3. Valida e processa cada combinação planta/ano
-        4. Gera consolidações automaticamente
-        """)
-        
-        # Descobrir plantas e anos disponíveis
-        base_path = Path(__file__).parent.parent.parent
-        data_raw = base_path / "data_raw"
-        
-        plantas_disponiveis = []
-        if data_raw.exists():
-            for planta_dir in data_raw.iterdir():
-                if planta_dir.is_dir() and planta_dir.name != "Códigos Mastersaf e Sapiens.xlsx":
-                    anos_planta = []
-                    for ano_dir in planta_dir.iterdir():
-                        if ano_dir.is_dir():
-                            excel_files = list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls"))
-                            if excel_files:
-                                try:
-                                    anos_planta.append(int(ano_dir.name))
-                                except ValueError:
-                                    continue
-                    if anos_planta:
-                        plantas_disponiveis.append({
-                            'planta': planta_dir.name,
-                            'anos': sorted(anos_planta)
-                        })
-        
-        if plantas_disponiveis:
-            st.success(f"✅ {len(plantas_disponiveis)} planta(s) encontrada(s) com dados")
-            
-            # Mostrar resumo em tabela
-            with st.expander("📋 Ver detalhes do que será processado"):
-                for item in plantas_disponiveis:
-                    st.markdown(f"**{item['planta']}**: {', '.join(map(str, item['anos']))}")
-        else:
-            st.warning("⚠️ Nenhuma planta com dados encontrada em data_raw/")
-            st.stop()
-    
     st.markdown("---")
     
     # Modo de processamento
@@ -357,22 +368,24 @@ with tab2:
     st.markdown("---")
     
     # Botão de processar (abaixo das opções)
-    if modo_processamento == "📄 Uma planta/ano específico":
-        btn_label = "🚀 Processar Extração"
-    elif modo_processamento == "📅 Todos os anos de uma planta":
+    if planta_proc == "Todos" and ano_proc == "Todos":
+        btn_label = "🌐 Processar TODAS as Plantas e Anos"
+    elif planta_proc != "Todos" and ano_proc == "Todos":
         btn_label = f"📅 Processar TODOS os Anos de {planta_proc}"
     else:
-        btn_label = "🌐 Processar TODAS as Plantas e Anos"
+        btn_label = f"🚀 Processar {planta_proc} - {ano_proc}"
     
     if st.button(btn_label, type="primary", use_container_width=True, key="btn_processar"):
-        from extraction.extracao import process_raw_excel_to_parquet, validate_excel_files
+        from extraction.extracao import validate_excel_files
         from datetime import datetime
         
         base_path = Path(__file__).parent.parent.parent
         
         # Preparar lista de plantas/anos para processar
-        if modo_processamento == "🌐 Todas as plantas e anos":
-            # Modo todas as plantas - descobrir novamente
+        tarefas = []
+        
+        if planta_proc == "Todos" and ano_proc == "Todos":
+            # Todas as plantas e todos os anos
             data_raw = base_path / "data_raw"
             plantas_disponiveis = []
             if data_raw.exists():
@@ -381,7 +394,8 @@ with tab2:
                         anos_planta = []
                         for ano_dir in planta_dir.iterdir():
                             if ano_dir.is_dir():
-                                excel_files = list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls"))
+                                excel_files = [f for f in list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls")) 
+                                             if not f.name.startswith("~$") and not f.name.startswith(".")]
                                 if excel_files:
                                     try:
                                         anos_planta.append(int(ano_dir.name))
@@ -393,7 +407,6 @@ with tab2:
                                 'anos': sorted(anos_planta)
                             })
             
-            tarefas = []
             for item in plantas_disponiveis:
                 for ano in item['anos']:
                     tarefas.append({'planta': item['planta'], 'ano': ano})
@@ -404,10 +417,22 @@ with tab2:
             
             st.info(f"📦 Total de {len(tarefas)} combinação(ões) planta/ano para processar")
         
-        elif modo_processamento == "📅 Todos os anos de uma planta":
-            # Modo todos os anos de uma planta
-            tarefas = []
-            for ano in anos_disponiveis:
+        elif planta_proc != "Todos" and ano_proc == "Todos":
+            # Uma planta, todos os anos
+            data_raw = base_path / "data_raw" / planta_proc
+            anos_disponiveis = []
+            if data_raw.exists():
+                for ano_dir in data_raw.iterdir():
+                    if ano_dir.is_dir():
+                        excel_files = [f for f in list(ano_dir.glob("*.xlsx")) + list(ano_dir.glob("*.xls")) 
+                                     if not f.name.startswith("~$") and not f.name.startswith(".")]
+                        if excel_files:
+                            try:
+                                anos_disponiveis.append(int(ano_dir.name))
+                            except ValueError:
+                                continue
+            
+            for ano in sorted(anos_disponiveis):
                 tarefas.append({'planta': planta_proc, 'ano': ano})
             
             if not tarefas:
@@ -417,18 +442,19 @@ with tab2:
             st.info(f"📦 Total de {len(tarefas)} ano(s) de {planta_proc} para processar")
         
         else:
-            # Modo uma planta
+            # Uma planta e um ano específico
             raw_path = base_path / "data_raw" / planta_proc / str(ano_proc)
             if not raw_path.exists():
                 st.error("❌ Diretório de entrada não existe!")
                 st.stop()
             
-            excel_files = list(raw_path.glob("*.xlsx")) + list(raw_path.glob("*.xls"))
+            excel_files = [f for f in list(raw_path.glob("*.xlsx")) + list(raw_path.glob("*.xls")) 
+                         if not f.name.startswith("~$") and not f.name.startswith(".")]
             if not excel_files:
                 st.warning("⚠️ Nenhum arquivo Excel encontrado no diretório!")
                 st.stop()
             
-            tarefas = [{'planta': planta_proc, 'ano': ano_proc}]
+            tarefas.append({'planta': planta_proc, 'ano': int(ano_proc)})
         
         # Determinar se é modo batch (múltiplas tarefas)
         modo_batch = len(tarefas) > 1
@@ -439,33 +465,69 @@ with tab2:
         
         # STATUS AO VIVO (separado do log histórico)
         st.markdown("### 🔴 Status Atual")
-        status_atual_container = st.empty()
-        arquivo_atual_container = st.empty()
+        status_container = st.empty()
+        progress_bar = st.progress(0)
         
-        # Containers para progresso
+        # Container para progresso global (batch)
         if modo_batch:
             st.markdown(f"### 🌐 Processando {len(tarefas)} planta(s)/ano(s)")
-            global_progress = st.progress(0)
             global_status = st.empty()
-        else:
-            individual_progress = st.progress(0)
-            individual_status = st.empty()
         
-        # Container para log HISTÓRICO
-        st.markdown("### 📝 Log Completo")
-        with st.expander("📋 Ver log detalhado", expanded=False):
-            log_display = st.empty()
+        # Container para LOG EM TEMPO REAL
+        st.markdown("### 📝 Log da Execução")
+        logs_container = st.container()
+        
+        # CSS para limitar altura do log com scroll
+        st.markdown("""
+        <style>
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
         # Inicializar lista de logs
         if 'extraction_logs' not in st.session_state:
             st.session_state.extraction_logs = []
         st.session_state.extraction_logs = []
         
-        # Função auxiliar para atualizar o log display
-        def atualizar_log():
-            """Atualiza o display do log em tempo real"""
-            log_text = "\n".join(st.session_state.extraction_logs[-150:])  # Últimas 150 linhas
-            log_display.code(log_text, language="log")
+        # Placeholder dentro do container para logs
+        with logs_container:
+            logs_display = st.empty()
+        
+        # Função para renderizar logs
+        def render_logs():
+            """Renderiza os últimos 50 logs na tela"""
+            ultimos = st.session_state.extraction_logs[-50:]
+            with logs_display.container():
+                for linha in ultimos:
+                    st.code(linha, language="text")
+        
+        # Função para adicionar log
+        def adicionar_log(mensagem, sem_timestamp=False):
+            """Adiciona mensagem aos logs"""
+            if sem_timestamp:
+                log_entry = mensagem
+            else:
+                timestamp = datetime.now().strftime('%H:%M:%S')
+                log_entry = f"[{timestamp}] {mensagem}"
+            
+            st.session_state.extraction_logs.append(log_entry)
+            if len(st.session_state.extraction_logs) > 200:
+                st.session_state.extraction_logs = st.session_state.extraction_logs[-200:]
+        
+        # Função para atualizar progresso
+        def atualizar_progresso(percent, titulo, detalhe=""):
+            """Atualiza barra de progresso e status"""
+            status_container.info(f"**{titulo}** {detalhe}")
+            progress_bar.progress(int(percent), text=f"{int(percent)}%")
         
         # Contadores
         total_tarefas = len(tarefas)
@@ -478,49 +540,39 @@ with tab2:
             planta_atual = tarefa['planta']
             ano_atual = tarefa['ano']
             
-            # ATUALIZAR STATUS ATUAL IMEDIATAMENTE
-            status_atual_container.info(f"🏭 **Planta:** {planta_atual} | **Ano:** {ano_atual} | **Tarefa:** {idx+1}/{total_tarefas}")
-            arquivo_atual_container.warning(f"⏳ Iniciando validação...")
-            
-            # Log de início
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            log_entry = f"[{timestamp}] [INICIANDO] 🏭 Planta: {planta_atual} | Ano: {ano_atual}"
-            st.session_state.extraction_logs.append(log_entry)
-            st.session_state.extraction_logs.append("-" * 80)
-            atualizar_log()
-            
             # Atualizar progresso global
             if modo_batch:
-                progresso_global = int((idx / total_tarefas) * 100)
-                global_progress.progress(progresso_global)
-                global_status.info(f"📍 Processando {idx+1}/{total_tarefas}: **{planta_atual} - {ano_atual}**")
+                progresso_batch = int((idx / total_tarefas) * 100)
+                global_status.info(f"📍 Tarefa {idx+1}/{total_tarefas}: **{planta_atual} - {ano_atual}**")
+            
+            # Log de início
+            adicionar_log(f"{'='*80}")
+            adicionar_log(f"INICIANDO: Planta {planta_atual} - Ano {ano_atual}")
+            adicionar_log(f"{'='*80}")
+            render_logs()
+            
+            atualizar_progresso(0, "🏭 Iniciando processamento", f"{planta_atual} - {ano_atual}")
             
             # Validação
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            log_entry = f"[{timestamp}] [VALIDANDO] Verificando arquivos..."
-            st.session_state.extraction_logs.append(log_entry)
-            atualizar_log()
+            adicionar_log("Validando arquivos...")
+            render_logs()
+            atualizar_progresso(5, "🔍 Validando arquivos...", "")
             
-            # ATUALIZAR STATUS ATUAL
-            arquivo_atual_container.info(f"🔍 Validando arquivos Excel...")
+            atualizar_progresso(5, "🔍 Validando arquivos...", "")
             
             sucesso_validacao, mensagem_validacao, problemas = validate_excel_files(planta_atual, ano_atual)
             
             if not sucesso_validacao:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                log_entry = f"[{timestamp}] [ERRO] ❌ Validação falhou: {mensagem_validacao}"
-                st.session_state.extraction_logs.append(log_entry)
+                adicionar_log(f"ERRO na validação: {mensagem_validacao}")
                 
                 if problemas:
                     for problema in problemas:
-                        log_entry = f"[{timestamp}] [ERRO]   - Arquivo: {problema['arquivo']}"
-                        st.session_state.extraction_logs.append(log_entry)
-                        log_entry = f"[{timestamp}] [ERRO]     Erro: {problema['erro']}"
-                        st.session_state.extraction_logs.append(log_entry)
+                        adicionar_log(f"  - Arquivo: {problema['arquivo']}")
+                        adicionar_log(f"    Erro: {problema['erro']}")
                 
                 tarefas_erro += 1
-                st.session_state.extraction_logs.append("-" * 80)
-                atualizar_log()
+                render_logs()
+                atualizar_progresso(10, "❌ Validação falhou", mensagem_validacao)
                 
                 # Se for modo único, parar. Se for múltiplo, continuar
                 if not modo_batch:
@@ -530,82 +582,131 @@ with tab2:
                     continue
             
             # Validação OK
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            log_entry = f"[{timestamp}] [VALIDAÇÃO] ✅ {mensagem_validacao}"
-            st.session_state.extraction_logs.append(log_entry)
-            atualizar_log()
+            adicionar_log(f"VALIDACAO OK: {mensagem_validacao}")
+            render_logs()
+            atualizar_progresso(10, "✅ Validação OK", "Iniciando extração...")
             
-            # ATUALIZAR STATUS ATUAL
-            arquivo_atual_container.success(f"✅ Validação OK - Iniciando processamento...")
+            # EXECUTAR EXTRAÇÃO VIA SUBPROCESS PARA CAPTURAR TODO O OUTPUT
+            import subprocess
+            import sys
+            import json
+            from pathlib import Path
             
-            # Função de callback para log em tempo real
-            def update_progress_log(percent, total_percent, message, step):
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                log_entry = f"[{timestamp}] [{step}] {message}"
-                st.session_state.extraction_logs.append(log_entry)
-                
-                # Atualizar status atual de forma leve
-                arquivo_atual_container.info(f"**{step}:** {message}")
-                
-                # Atualizar progresso
-                if not modo_batch:
-                    individual_progress.progress(int(percent))
-                
-                # Atualizar log apenas a cada 5%
-                if percent % 5 == 0 or percent >= 95:
-                    atualizar_log()
+            base_path = Path(__file__).parent.parent.parent
+            script_path = base_path / "run_extraction.py"
+            python_exe = sys.executable
             
-            # Processar
+            # Preparar comando
+            cmd = [python_exe, str(script_path), planta_atual, str(ano_atual), modo]
+            
+            # Preparar ambiente com UTF-8
+            import os
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            
             try:
-                sucesso, mensagem, total_registros = process_raw_excel_to_parquet(
-                    planta_atual,
-                    ano_atual,
-                    mode=modo,
-                    progress_callback=update_progress_log
+                # Executar processo
+                adicionar_log("Executando extração...")
+                render_logs()
+                atualizar_progresso(15, "🚀 Iniciando extração", "")
+                
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace',
+                    bufsize=1,
+                    universal_newlines=True,
+                    cwd=str(base_path),
+                    env=env
                 )
                 
-                timestamp = datetime.now().strftime("%H:%M:%S")
+                # Ler output linha por linha EM TEMPO REAL
+                ultima_linha_json = None
+                linha_count = 0
+                
+                for line in process.stdout:
+                    line = line.rstrip()
+                    if not line or line == '-' * 80:
+                        continue
+                    
+                    # Adicionar ao log SEM timestamp (já vem do script)
+                    adicionar_log(line, sem_timestamp=True)
+                    linha_count += 1
+                    
+                    # Atualizar display a cada 5 linhas
+                    if linha_count % 5 == 0:
+                        render_logs()
+                    
+                    # Extrair percentual para barra de progresso
+                    if '[' in line and '%]' in line:
+                        try:
+                            percent_str = line.split('[')[1].split('%]')[0].strip()
+                            percent = int(percent_str)
+                            
+                            # Extrair mensagem
+                            if ']' in line:
+                                partes = line.split(']')
+                                if len(partes) >= 3:
+                                    mensagem = ']'.join(partes[2:]).strip()
+                                    atualizar_progresso(percent, "Processando", mensagem[:50])
+                        except:
+                            pass
+                    
+                    # Guardar última linha JSON (resultado final)
+                    if line.strip().startswith('{"'):
+                        ultima_linha_json = line.strip()
+                
+                # Aguardar conclusão
+                process.wait()
+                
+                # Renderizar logs finais
+                render_logs()
+                
+                # Processar resultado
+                if ultima_linha_json:
+                    resultado = json.loads(ultima_linha_json)
+                    sucesso = resultado.get('success', False)
+                    mensagem = resultado.get('message', 'Sem mensagem')
+                    total_registros = resultado.get('total', 0)
+                else:
+                    sucesso = process.returncode == 0
+                    mensagem = "Processamento concluído" if sucesso else "Erro no processamento"
+                    total_registros = 0
                 
                 if sucesso:
-                    log_entry = f"[{timestamp}] [CONCLUÍDO] ✅ {mensagem}"
-                    st.session_state.extraction_logs.append(log_entry)
-                    log_entry = f"[{timestamp}] [INFO] Total de registros: {total_registros:,}"
-                    st.session_state.extraction_logs.append(log_entry)
+                    adicionar_log(f"CONCLUIDO COM SUCESSO: {mensagem}")
+                    adicionar_log(f"Total de registros: {total_registros:,}")
                     tarefas_sucesso += 1
+                    atualizar_progresso(100, "✅ Concluído!", f"{total_registros:,} registros")
                 else:
-                    log_entry = f"[{timestamp}] [ERRO] ❌ {mensagem}"
-                    st.session_state.extraction_logs.append(log_entry)
+                    adicionar_log(f"ERRO: {mensagem}")
                     tarefas_erro += 1
+                    atualizar_progresso(100, "❌ Erro", mensagem)
                 
-                st.session_state.extraction_logs.append("-" * 80)
-                atualizar_log()
+                render_logs()
                     
             except Exception as e:
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                log_entry = f"[{timestamp}] [EXCEÇÃO] ❌ Erro ao processar: {str(e)}"
-                st.session_state.extraction_logs.append(log_entry)
-                st.session_state.extraction_logs.append("-" * 80)
+                adicionar_log(f"EXCECAO: {str(e)}")
                 tarefas_erro += 1
-                atualizar_log()
+                render_logs()
+                atualizar_progresso(100, "❌ Exceção", str(e)[:50])
             
             tarefas_concluidas += 1
         
         # Resumo final
         if modo_batch:
-            global_progress.progress(100)
+            atualizar_progresso(100, "✅ Processamento concluído", f"{tarefas_sucesso} sucesso(s), {tarefas_erro} erro(s)")
             
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            st.session_state.extraction_logs.append("=" * 80)
-            log_entry = f"[{timestamp}] [RESUMO FINAL]"
-            st.session_state.extraction_logs.append(log_entry)
-            log_entry = f"[{timestamp}] [RESUMO] Total processado: {tarefas_concluidas}/{total_tarefas}"
-            st.session_state.extraction_logs.append(log_entry)
-            log_entry = f"[{timestamp}] [RESUMO] ✅ Sucesso: {tarefas_sucesso}"
-            st.session_state.extraction_logs.append(log_entry)
-            log_entry = f"[{timestamp}] [RESUMO] ❌ Erros: {tarefas_erro}"
-            st.session_state.extraction_logs.append(log_entry)
-            st.session_state.extraction_logs.append("=" * 80)
-            atualizar_log()
+            adicionar_log("=" * 80)
+            adicionar_log("RESUMO FINAL")
+            adicionar_log(f"Total processado: {tarefas_concluidas}/{total_tarefas}")
+            adicionar_log(f"Sucesso: {tarefas_sucesso}")
+            adicionar_log(f"Erros: {tarefas_erro}")
+            adicionar_log("=" * 80)
+            render_logs()
             
             if tarefas_sucesso == total_tarefas:
                 st.success(f"🎉 Todas as {total_tarefas} planta(s)/ano(s) processadas com sucesso!")

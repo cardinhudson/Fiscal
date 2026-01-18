@@ -47,16 +47,25 @@ def load_codigos_mastersaf():
             print(f"⚠️ Arquivo de códigos não encontrado: {codigos_path}")
             return None
         
-        # Ler apenas as colunas necessárias
-        df_codigos = pd.read_excel(
-            codigos_path,
-            usecols=['CFOP', 'COD_NATUREZA_OP', 'DESCRICAO_NATUREZA_OP']
-        )
+        # Ler as colunas necessárias (incluindo RESUMO DE OPERAÇÃO se existir)
+        try:
+            df_codigos = pd.read_excel(
+                codigos_path,
+                usecols=['CFOP', 'COD_NATUREZA_OP', 'DESCRICAO_NATUREZA_OP', 'RESUMO DE OPERAÇÃO']
+            )
+        except ValueError:
+            # Se RESUMO DE OPERAÇÃO não existir, carregar sem ela
+            df_codigos = pd.read_excel(
+                codigos_path,
+                usecols=['CFOP', 'COD_NATUREZA_OP', 'DESCRICAO_NATUREZA_OP']
+            )
         
         # Converter CFOP para string e padronizar
         df_codigos['CFOP'] = df_codigos['CFOP'].astype(str).str.strip()
         df_codigos['COD_NATUREZA_OP'] = df_codigos['COD_NATUREZA_OP'].astype(str).str.strip()
         df_codigos['DESCRICAO_NATUREZA_OP'] = df_codigos['DESCRICAO_NATUREZA_OP'].astype(str).str.strip()
+        if 'RESUMO DE OPERAÇÃO' in df_codigos.columns:
+            df_codigos['RESUMO DE OPERAÇÃO'] = df_codigos['RESUMO DE OPERAÇÃO'].astype(str).str.strip()
         
         # Remover duplicatas (manter primeira ocorrência)
         df_codigos = df_codigos.drop_duplicates(subset=['CFOP'], keep='first')
@@ -89,7 +98,11 @@ def validate_excel_files(planta: str, ano: int):
     if not raw_path.exists():
         return False, f"❌ Diretório não existe: {raw_path}", []
     
-    excel_files = list(raw_path.glob("*.xlsx")) + list(raw_path.glob("*.xls"))
+    # Listar arquivos Excel, ignorando temporários/ocultos
+    excel_files = [
+        f for f in list(raw_path.glob("*.xlsx")) + list(raw_path.glob("*.xls"))
+        if not f.name.startswith("~$") and not f.name.startswith(".")
+    ]
     
     if not excel_files:
         return False, "❌ Nenhum arquivo Excel encontrado", []
@@ -247,8 +260,6 @@ def read_monthly_excel(file_path, logger: Optional[ExtractionLogger] = None):
             'DESCRICAO',
             'RAZAO_SOCIAL',
             'CFOP',
-            'COD_NATUREZA_OP',
-            'DESCRICAO_NATUREZA_OP',
             'ALIQ_ICMS',
             'BASE_ICMS_1',
             'VALOR_ICMS',
@@ -351,17 +362,28 @@ def read_monthly_excel(file_path, logger: Optional[ExtractionLogger] = None):
         
         if df_codigos is not None and 'cfop' in df.columns:
             # Remover as colunas antigas antes do merge
-            colunas_para_remover = ['cod_natureza_op', 'descricao_natureza_op']
+            colunas_para_remover = ['cod_natureza_op', 'descricao_natureza_op', 'resumo_de_operacao']
             df = df.drop(columns=[col for col in colunas_para_remover if col in df.columns])
             
             # Preparar df_codigos com nomes em snake_case para o merge
             df_codigos_merge = df_codigos.copy()
             df_codigos_merge.columns = [to_snake_case(col) for col in df_codigos_merge.columns]
             
+            # Converter CFOP para int em ambos DataFrames para o merge funcionar
+            if 'cfop' in df.columns:
+                df['cfop'] = pd.to_numeric(df['cfop'], errors='coerce').fillna(0).astype(int)
+            if 'cfop' in df_codigos_merge.columns:
+                df_codigos_merge['cfop'] = pd.to_numeric(df_codigos_merge['cfop'], errors='coerce').fillna(0).astype(int)
+            
+            # Selecionar colunas disponíveis para o merge
+            colunas_merge = ['cfop', 'cod_natureza_op', 'descricao_natureza_op']
+            if 'resumo_de_operacao' in df_codigos_merge.columns:
+                colunas_merge.append('resumo_de_operacao')
+            
             # Fazer o merge usando CFOP como chave
             registros_antes = len(df)
             df = df.merge(
-                df_codigos_merge[['cfop', 'cod_natureza_op', 'descricao_natureza_op']],
+                df_codigos_merge[colunas_merge],
                 on='cfop',
                 how='left'
             )
@@ -379,9 +401,11 @@ def read_monthly_excel(file_path, logger: Optional[ExtractionLogger] = None):
             # Preencher registros não encontrados com "Não encontrado"
             df['cod_natureza_op'] = df['cod_natureza_op'].fillna('Não encontrado')
             df['descricao_natureza_op'] = df['descricao_natureza_op'].fillna('Não encontrado')
+            if 'resumo_de_operacao' in df.columns:
+                df['resumo_de_operacao'] = df['resumo_de_operacao'].fillna('Não encontrado')
             
             # Garantir que as novas colunas sejam string
-            for col in ['cod_natureza_op', 'descricao_natureza_op']:
+            for col in ['cod_natureza_op', 'descricao_natureza_op', 'resumo_de_operacao']:
                 if col in df.columns:
                     df[col] = df[col].astype(str).str.strip()
         
@@ -797,6 +821,10 @@ def create_consolidated_parquets(planta: str, ano: int):
             
             df_produtos = df.groupby('descricao').agg(agg_dict).reset_index()
             
+            # Converter CFOP para int se existir
+            if 'cfop' in df_produtos.columns:
+                df_produtos['cfop'] = pd.to_numeric(df_produtos['cfop'], errors='coerce').fillna(0).astype(int)
+            
             rename_dict = {}
             if 'razao_social' in df_produtos.columns:
                 rename_dict['razao_social'] = 'qtd_fornecedores'
@@ -825,7 +853,8 @@ def create_consolidated_parquets(planta: str, ano: int):
         print("  🔢 Criando cfop.parquet...")
         if 'cfop' in df.columns:
             df_copy = df.copy()
-            df_copy['cfop'] = df_copy['cfop'].fillna('').astype(str).str.strip()
+            # Manter CFOP como int para evitar erros no parquet
+            df_copy['cfop'] = pd.to_numeric(df_copy['cfop'], errors='coerce').fillna(0).astype(int)
             
             group_cols = ['cfop']
             if 'descricao_natureza_op' in df_copy.columns:
@@ -875,6 +904,71 @@ def create_consolidated_parquets(planta: str, ano: int):
             
             df_cfop.to_parquet(cfop_file, index=False)
             print(f"    ✅ cfop.parquet: {len(df_cfop)} registros")
+        
+        # 5. CFOPs NÃO ENCONTRADOS - Registros sem correspondência na tabela de códigos
+        print("  ⚠️ Criando cfops_nao_encontrados.parquet...")
+        if 'cod_natureza_op' in df.columns:
+            df_nao_encontrados = df[df['cod_natureza_op'] == 'Não encontrado'].copy()
+            
+            if not df_nao_encontrados.empty:
+                # Agrupar por CFOP e agregar informações
+                agg_dict = {
+                    'valor_icms': 'sum',
+                    'base_icms_1': 'sum',
+                    'quantidade': 'sum'
+                }
+                
+                if 'numero_nf' in df_nao_encontrados.columns:
+                    agg_dict['numero_nf'] = 'nunique'
+                if 'razao_social' in df_nao_encontrados.columns:
+                    agg_dict['razao_social'] = 'nunique'
+                if 'descricao' in df_nao_encontrados.columns:
+                    agg_dict['descricao'] = 'nunique'
+                if 'entrada_saida' in df_nao_encontrados.columns:
+                    agg_dict['entrada_saida'] = lambda x: x.mode()[0] if not x.mode().empty else x.iloc[0]
+                if 'data_fiscal' in df_nao_encontrados.columns:
+                    agg_dict['data_fiscal'] = ['min', 'max']
+                
+                df_cfops_nao_enc = df_nao_encontrados.groupby('cfop').agg(agg_dict).reset_index()
+                
+                # Renomear colunas multi-level se existir
+                if isinstance(df_cfops_nao_enc.columns, pd.MultiIndex):
+                    df_cfops_nao_enc.columns = ['_'.join(col).strip('_') if col[1] else col[0] 
+                                                 for col in df_cfops_nao_enc.columns.values]
+                
+                # Renomear colunas para ficar mais claro
+                rename_dict = {}
+                if 'numero_nf' in df_cfops_nao_enc.columns:
+                    rename_dict['numero_nf'] = 'qtd_notas'
+                if 'razao_social' in df_cfops_nao_enc.columns:
+                    rename_dict['razao_social'] = 'qtd_fornecedores'
+                if 'descricao' in df_cfops_nao_enc.columns:
+                    rename_dict['descricao'] = 'qtd_produtos'
+                if 'data_fiscal_min' in df_cfops_nao_enc.columns:
+                    rename_dict['data_fiscal_min'] = 'primeira_ocorrencia'
+                if 'data_fiscal_max' in df_cfops_nao_enc.columns:
+                    rename_dict['data_fiscal_max'] = 'ultima_ocorrencia'
+                
+                if rename_dict:
+                    df_cfops_nao_enc.rename(columns=rename_dict, inplace=True)
+                
+                df_cfops_nao_enc['planta'] = planta
+                df_cfops_nao_enc['ano'] = ano
+                df_cfops_nao_enc = df_cfops_nao_enc.sort_values('valor_icms', ascending=False)
+                
+                # Salvar ou atualizar cfops_nao_encontrados.parquet
+                cfops_nao_enc_file = consolidated_path / "cfops_nao_encontrados.parquet"
+                if cfops_nao_enc_file.exists():
+                    df_nao_enc_existente = pd.read_parquet(cfops_nao_enc_file)
+                    df_nao_enc_existente = df_nao_enc_existente[
+                        ~((df_nao_enc_existente['planta'] == planta) & (df_nao_enc_existente['ano'] == ano))
+                    ]
+                    df_cfops_nao_enc = pd.concat([df_nao_enc_existente, df_cfops_nao_enc], ignore_index=True)
+                
+                df_cfops_nao_enc.to_parquet(cfops_nao_enc_file, index=False)
+                print(f"    ⚠️ cfops_nao_encontrados.parquet: {len(df_cfops_nao_enc)} CFOPs únicos não encontrados")
+            else:
+                print(f"    ✅ Nenhum CFOP não encontrado!")
         
         print(f"✅ Consolidação concluída para {planta} - {ano}")
         return True, f"Consolidação criada em {consolidated_path}"

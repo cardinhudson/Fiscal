@@ -172,6 +172,13 @@ if 'descricao_natureza_op' in df.columns:
     if desc_nat_op_sel != 'Todos':
         df_filtered = df_filtered[df_filtered['descricao_natureza_op'] == desc_nat_op_sel]
 
+# Filtro Resumo de Operação
+if 'resumo_de_operacao' in df.columns:
+    resumo_ops_disponiveis = ['Todos'] + sorted(df['resumo_de_operacao'].dropna().unique().tolist())
+    resumo_op_sel = st.sidebar.selectbox("Resumo de Operação", resumo_ops_disponiveis)
+    if resumo_op_sel != 'Todos':
+        df_filtered = df_filtered[df_filtered['resumo_de_operacao'] == resumo_op_sel]
+
 # Filtro Código do Produto
 if 'codigo_produto' in df.columns:
     codigo_produto_input = st.sidebar.text_input("Código Produto (busca)", "")
@@ -362,8 +369,9 @@ with tab3:
                     format="%.2f"
                 )
             if 'cfop' in df_tabela_prod.columns:
-                column_config['cfop'] = st.column_config.TextColumn(
-                    "CFOP"
+                column_config['cfop'] = st.column_config.NumberColumn(
+                    "CFOP",
+                    format="%d"
                 )
             if 'cst_icms' in df_tabela_prod.columns:
                 column_config['cst_icms'] = st.column_config.TextColumn(
@@ -450,8 +458,9 @@ with tab4:
                     format="%.2f"
                 )
             if 'cfop' in df_tabela_cfop.columns:
-                column_config['cfop'] = st.column_config.TextColumn(
-                    "CFOP"
+                column_config['cfop'] = st.column_config.NumberColumn(
+                    "CFOP",
+                    format="%d"
                 )
             if 'cst_icms' in df_tabela_cfop.columns:
                 column_config['cst_icms'] = st.column_config.TextColumn(

@@ -9,8 +9,10 @@ Rodar:
 import streamlit as st
 import pandas as pd
 import sys
+import shutil
 from pathlib import Path
 from io import BytesIO
+from datetime import datetime
 
 
 def _ensure_running_via_streamlit() -> None:
@@ -36,7 +38,8 @@ from app.utils.load_consolidated_data import (
     load_consolidated_mensal,
     load_consolidated_fornecedores,
     load_consolidated_produtos,
-    load_consolidated_cfop
+    load_consolidated_cfop,
+    load_consolidated_cfops_nao_encontrados
 )
 from app.utils.transform_data import (
     plot_monthly_chart,
@@ -89,8 +92,6 @@ else:
     divisor = 1
     sufixo = ""
 
-st.markdown("---")
-
 # Sidebar - Filtros principais
 st.sidebar.header("Filtros Principais")
 
@@ -118,29 +119,268 @@ if df_mensal.empty and df_fornecedores.empty and df_produtos.empty and df_cfop.e
     st.info("💡 Processe dados na página **Extração** para gerar consolidações.")
     st.stop()
 
-# Filtros opcionais
-st.sidebar.header("Filtros Opcionais")
+# Filtro de Plantas (na página principal)
+st.markdown("---")
+st.markdown("### 🏭 Filtro de Plantas")
 
-# Filtro de Plantas (multi-seleção)
-if 'planta' in df_mensal.columns:
+planta_option = "Todas"
+
+if not df_mensal.empty and 'planta' in df_mensal.columns:
     plantas_disponiveis = sorted(df_mensal['planta'].unique().tolist())
-    plantas_sel = st.sidebar.multiselect(
-        "Plantas",
-        plantas_disponiveis,
-        default=plantas_disponiveis,
-        help="Selecione uma ou mais plantas para filtrar"
+    plantas_options = ["Todas"] + plantas_disponiveis
+    
+    planta_option = st.selectbox(
+        "Selecione a planta para análise:",
+        plantas_options,
+        index=0,
+        help="Escolha 'Todas' para visualizar dados de todas as plantas",
+        key="filtro_planta_home"
     )
     
-    # Aplicar filtro de plantas
-    if plantas_sel:
-        if not df_mensal.empty:
-            df_mensal = df_mensal[df_mensal['planta'].isin(plantas_sel)]
-        if not df_fornecedores.empty:
-            df_fornecedores = df_fornecedores[df_fornecedores['planta'].isin(plantas_sel)]
-        if not df_produtos.empty:
-            df_produtos = df_produtos[df_produtos['planta'].isin(plantas_sel)]
-        if not df_cfop.empty:
-            df_cfop = df_cfop[df_cfop['planta'].isin(plantas_sel)]
+    # Aplicar filtro de plantas se não for "Todas"
+    if planta_option != "Todas":
+        if not df_mensal.empty and 'planta' in df_mensal.columns:
+            df_mensal = df_mensal[df_mensal['planta'] == planta_option]
+        if not df_fornecedores.empty and 'planta' in df_fornecedores.columns:
+            df_fornecedores = df_fornecedores[df_fornecedores['planta'] == planta_option]
+        if not df_produtos.empty and 'planta' in df_produtos.columns:
+            df_produtos = df_produtos[df_produtos['planta'] == planta_option]
+        if not df_cfop.empty and 'planta' in df_cfop.columns:
+            df_cfop = df_cfop[df_cfop['planta'] == planta_option]
+
+st.markdown("---")
+
+# Filtros opcionais
+st.sidebar.header("Filtros Avançados")
+
+# Filtro de Mês
+if 'mes' in df_mensal.columns and not df_mensal.empty:
+    meses_raw = sorted(df_mensal['mes'].dropna().unique().tolist())
+    if meses_raw:
+        # Criar dicionário de mapeamento mês -> nome bonito
+        import calendar
+        import locale
+        try:
+            locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+        except:
+            try:
+                locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil.1252')
+            except:
+                pass
+        
+        meses_dict = {}
+        for mes in meses_raw:
+            try:
+                # mes está no formato 'YYYY-MM'
+                ano, mes_num = mes.split('-')
+                mes_nome = calendar.month_name[int(mes_num)].capitalize()
+                meses_dict[mes] = f"{mes_nome}/{ano}"
+            except:
+                meses_dict[mes] = mes
+        
+        opcoes_mes = ["Todos"] + [meses_dict[m] for m in meses_raw]
+        mes_sel_display = st.sidebar.selectbox(
+            "Mês",
+            opcoes_mes,
+            help="Filtrar por mês",
+            key="filtro_mes_home"
+        )
+        
+        if mes_sel_display != "Todos":
+            # Encontrar o mês original correspondente
+            mes_original = [k for k, v in meses_dict.items() if v == mes_sel_display][0]
+            if not df_mensal.empty:
+                df_mensal = df_mensal[df_mensal['mes'] == mes_original]
+            if not df_fornecedores.empty and 'mes' in df_fornecedores.columns:
+                df_fornecedores = df_fornecedores[df_fornecedores['mes'] == mes_original]
+            if not df_produtos.empty and 'mes' in df_produtos.columns:
+                df_produtos = df_produtos[df_produtos['mes'] == mes_original]
+            if not df_cfop.empty and 'mes' in df_cfop.columns:
+                df_cfop = df_cfop[df_cfop['mes'] == mes_original]
+
+# Filtro de Entrada/Saída
+if 'entrada_saida' in df_mensal.columns and not df_mensal.empty:
+    entrada_saida_disponiveis = sorted(df_mensal['entrada_saida'].dropna().unique().tolist())
+    if entrada_saida_disponiveis:
+        entrada_saida_options = ["Todos"] + entrada_saida_disponiveis
+        entrada_saida_sel = st.sidebar.selectbox(
+            "Entrada/Saída",
+            entrada_saida_options,
+            help="Filtrar por tipo de operação",
+            key="filtro_entrada_saida_home"
+        )
+        if entrada_saida_sel != "Todos":
+            if not df_mensal.empty:
+                df_mensal = df_mensal[df_mensal['entrada_saida'] == entrada_saida_sel]
+            if not df_fornecedores.empty and 'entrada_saida' in df_fornecedores.columns:
+                df_fornecedores = df_fornecedores[df_fornecedores['entrada_saida'] == entrada_saida_sel]
+            if not df_produtos.empty and 'entrada_saida' in df_produtos.columns:
+                df_produtos = df_produtos[df_produtos['entrada_saida'] == entrada_saida_sel]
+            if not df_cfop.empty and 'entrada_saida' in df_cfop.columns:
+                df_cfop = df_cfop[df_cfop['entrada_saida'] == entrada_saida_sel]
+
+# Filtro de CFOP
+if 'cfop' in df_mensal.columns and not df_mensal.empty:
+    cfop_disponiveis = sorted(df_mensal['cfop'].dropna().unique().tolist())
+    if cfop_disponiveis:
+        # Converter CFOPs para string para exibição
+        cfop_str_list = [str(int(c)) if isinstance(c, float) else str(c) for c in cfop_disponiveis]
+        cfop_options = ["Todos"] + cfop_str_list
+        cfop_sel = st.sidebar.selectbox(
+            "CFOP",
+            cfop_options,
+            help="Filtrar por Código Fiscal",
+            key="filtro_cfop_home"
+        )
+        if cfop_sel != "Todos":
+            # Converter de volta para o tipo original para filtro
+            cfop_num = int(cfop_sel)
+            if not df_mensal.empty:
+                df_mensal = df_mensal[df_mensal['cfop'] == cfop_num]
+            if not df_fornecedores.empty and 'cfop' in df_fornecedores.columns:
+                df_fornecedores = df_fornecedores[df_fornecedores['cfop'] == cfop_num]
+            if not df_produtos.empty and 'cfop' in df_produtos.columns:
+                df_produtos = df_produtos[df_produtos['cfop'] == cfop_num]
+            if not df_cfop.empty and 'cfop' in df_cfop.columns:
+                df_cfop = df_cfop[df_cfop['cfop'] == cfop_num]
+
+# Filtro de Resumo de Operação
+if 'resumo_de_operacao' in df_mensal.columns and not df_mensal.empty:
+    resumo_disponiveis = sorted(df_mensal['resumo_de_operacao'].dropna().unique().tolist())
+    if resumo_disponiveis:
+        resumo_options = ["Todos"] + resumo_disponiveis
+        resumo_sel = st.sidebar.selectbox(
+            "Resumo de Operação",
+            resumo_options,
+            help="Filtrar por resumo da operação fiscal",
+            key="filtro_resumo_home"
+        )
+        if resumo_sel != "Todos":
+            if not df_mensal.empty:
+                df_mensal = df_mensal[df_mensal['resumo_de_operacao'] == resumo_sel]
+            if not df_fornecedores.empty and 'resumo_de_operacao' in df_fornecedores.columns:
+                df_fornecedores = df_fornecedores[df_fornecedores['resumo_de_operacao'] == resumo_sel]
+            if not df_produtos.empty and 'resumo_de_operacao' in df_produtos.columns:
+                df_produtos = df_produtos[df_produtos['resumo_de_operacao'] == resumo_sel]
+            if not df_cfop.empty and 'resumo_de_operacao' in df_cfop.columns:
+                df_cfop = df_cfop[df_cfop['resumo_de_operacao'] == resumo_sel]
+
+# Filtro de Código Natureza Operação
+if 'cod_natureza_op' in df_mensal.columns and not df_mensal.empty:
+    cod_nat_disponiveis = sorted(df_mensal['cod_natureza_op'].dropna().unique().tolist())
+    if cod_nat_disponiveis:
+        cod_nat_options = ["Todos"] + cod_nat_disponiveis
+        cod_nat_sel = st.sidebar.selectbox(
+            "Código Natureza Op",
+            cod_nat_options,
+            help="Filtrar por código da natureza da operação",
+            key="filtro_cod_nat_home"
+        )
+        if cod_nat_sel != "Todos":
+            if not df_mensal.empty:
+                df_mensal = df_mensal[df_mensal['cod_natureza_op'] == cod_nat_sel]
+            if not df_fornecedores.empty and 'cod_natureza_op' in df_fornecedores.columns:
+                df_fornecedores = df_fornecedores[df_fornecedores['cod_natureza_op'] == cod_nat_sel]
+            if not df_produtos.empty and 'cod_natureza_op' in df_produtos.columns:
+                df_produtos = df_produtos[df_produtos['cod_natureza_op'] == cod_nat_sel]
+            if not df_cfop.empty and 'cod_natureza_op' in df_cfop.columns:
+                df_cfop = df_cfop[df_cfop['cod_natureza_op'] == cod_nat_sel]
+
+# Filtro de Descrição Natureza Operação
+if 'descricao_natureza_op' in df_mensal.columns and not df_mensal.empty:
+    desc_nat_disponiveis = sorted(df_mensal['descricao_natureza_op'].dropna().unique().tolist())
+    if desc_nat_disponiveis:
+        desc_nat_options = ["Todos"] + desc_nat_disponiveis
+        desc_nat_sel = st.sidebar.selectbox(
+            "Descrição Natureza Op",
+            desc_nat_options,
+            help="Filtrar por descrição da natureza da operação",
+            key="filtro_desc_nat_home"
+        )
+        if desc_nat_sel != "Todos":
+            if not df_mensal.empty:
+                df_mensal = df_mensal[df_mensal['descricao_natureza_op'] == desc_nat_sel]
+            if not df_fornecedores.empty and 'descricao_natureza_op' in df_fornecedores.columns:
+                df_fornecedores = df_fornecedores[df_fornecedores['descricao_natureza_op'] == desc_nat_sel]
+            if not df_produtos.empty and 'descricao_natureza_op' in df_produtos.columns:
+                df_produtos = df_produtos[df_produtos['descricao_natureza_op'] == desc_nat_sel]
+            if not df_cfop.empty and 'descricao_natureza_op' in df_cfop.columns:
+                df_cfop = df_cfop[df_cfop['descricao_natureza_op'] == desc_nat_sel]
+
+# Filtro de Razão Social (Fornecedor)
+if 'razao_social' in df_fornecedores.columns and not df_fornecedores.empty:
+    fornecedor_disponiveis = sorted(df_fornecedores['razao_social'].dropna().unique().tolist())
+    if fornecedor_disponiveis:
+        fornecedor_options = ["Todos"] + fornecedor_disponiveis
+        fornecedor_sel = st.sidebar.selectbox(
+            "Fornecedor",
+            fornecedor_options,
+            help="Filtrar por fornecedor",
+            key="filtro_fornecedor_home"
+        )
+        if fornecedor_sel != "Todos":
+            df_fornecedores = df_fornecedores[df_fornecedores['razao_social'] == fornecedor_sel]
+
+# Filtro de Descrição Produto
+if 'descricao_produto' in df_produtos.columns and not df_produtos.empty:
+    produto_disponiveis = sorted(df_produtos['descricao_produto'].dropna().unique().tolist())
+    if produto_disponiveis:
+        produto_options = ["Todos"] + produto_disponiveis
+        produto_sel = st.sidebar.selectbox(
+            "Descrição Produto",
+            produto_options,
+            help="Filtrar por descrição do produto",
+            key="filtro_produto_home"
+        )
+        if produto_sel != "Todos":
+            df_produtos = df_produtos[df_produtos['descricao_produto'] == produto_sel]
+
+# Filtro de UF (Estado)
+if 'uf' in df_fornecedores.columns and not df_fornecedores.empty:
+    uf_disponiveis = sorted(df_fornecedores['uf'].dropna().unique().tolist())
+    if uf_disponiveis:
+        uf_options = ["Todos"] + uf_disponiveis
+        uf_sel = st.sidebar.selectbox(
+            "UF (Estado)",
+            uf_options,
+            help="Filtrar por estado (UF)",
+            key="filtro_uf_home"
+        )
+        if uf_sel != "Todos":
+            df_fornecedores = df_fornecedores[df_fornecedores['uf'] == uf_sel]
+
+# Filtro de Município
+if 'municipio' in df_fornecedores.columns and not df_fornecedores.empty:
+    municipio_disponiveis = sorted(df_fornecedores['municipio'].dropna().unique().tolist())
+    if municipio_disponiveis:
+        municipio_options = ["Todos"] + municipio_disponiveis
+        municipio_sel = st.sidebar.selectbox(
+            "Município",
+            municipio_options,
+            help="Filtrar por município",
+            key="filtro_municipio_home"
+        )
+        if municipio_sel != "Todos":
+            df_fornecedores = df_fornecedores[df_fornecedores['municipio'] == municipio_sel]
+
+# Filtro de CST ICMS
+if 'cst_icms' in df_fornecedores.columns and not df_fornecedores.empty:
+    cst_disponiveis = sorted(df_fornecedores['cst_icms'].dropna().unique().tolist())
+    if cst_disponiveis:
+        cst_options = ["Todos"] + cst_disponiveis
+        cst_sel = st.sidebar.selectbox(
+            "CST ICMS",
+            cst_options,
+            help="Filtrar por CST ICMS",
+            key="filtro_cst_home"
+        )
+        if cst_sel != "Todos":
+            df_fornecedores = df_fornecedores[df_fornecedores['cst_icms'] == cst_sel]
+            # Aplicar também em produtos e cfop se existir
+            if 'cst_icms' in df_produtos.columns and not df_produtos.empty:
+                df_produtos = df_produtos[df_produtos['cst_icms'] == cst_sel]
+            if 'cst_icms' in df_cfop.columns and not df_cfop.empty:
+                df_cfop = df_cfop[df_cfop['cst_icms'] == cst_sel]
 
 # Métricas principais
 st.header("📊 Resumo Consolidado")
@@ -190,12 +430,58 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 # TAB 1: MENSAL
 with tab1:
-    st.subheader("Evolução Mensal de ICMS - Todas as Plantas")
+    titulo_plantas = f"Evolução Mensal de ICMS - {planta_option if planta_option != 'Todas' else 'Todas as Plantas'}"
+    st.subheader(titulo_plantas)
     
     if not df_mensal.empty:
-        # Gráfico mensal
+        # Gráfico de Top Plantas por ICMS (apenas se "Todas" estiver selecionado)
+        if planta_option == "Todas":
+            st.markdown("### 📊 Top Plantas por ICMS")
+            
+            # Agregar por planta
+            df_plantas_agg = df_mensal.groupby('planta').agg({
+                'valor_icms': 'sum',
+                'base_icms_1': 'sum'
+            }).reset_index()
+            
+            # Aplicar divisor
+            df_plantas_agg['valor_icms'] = df_plantas_agg['valor_icms'] / divisor
+            df_plantas_agg['base_icms_1'] = df_plantas_agg['base_icms_1'] / divisor
+            
+            # Ordenar por valor ICMS
+            df_plantas_agg = df_plantas_agg.sort_values('valor_icms', ascending=False)
+            
+            # Criar gráfico de barras
+            import plotly.graph_objects as go
+            
+            fig_plantas = go.Figure(data=[
+                go.Bar(
+                    x=df_plantas_agg['planta'],
+                    y=df_plantas_agg['valor_icms'],
+                    text=df_plantas_agg['valor_icms'].apply(lambda x: f'R$ {x:,.2f}'),
+                    textposition='auto',
+                    marker_color='#1f77b4',
+                    hovertemplate='<b>%{x}</b><br>ICMS: R$ %{y:,.2f}<extra></extra>'
+                )
+            ])
+            
+            label_icms = f"ICMS ({sufixo})" if sufixo else "ICMS"
+            fig_plantas.update_layout(
+                xaxis_title="Planta",
+                yaxis_title=f"Valor {label_icms}",
+                showlegend=False,
+                height=400,
+                margin=dict(l=50, r=50, t=10, b=50)
+            )
+            
+            st.plotly_chart(fig_plantas, use_container_width=True, key="chart_plantas_icms")
+        
+        # Gráfico mensal (sempre exibido)
+        st.markdown("### 📈 Evolução Mensal")
         fig_month = plot_monthly_chart(df_mensal, divisor=divisor, sufixo=sufixo)
         st.plotly_chart(fig_month, use_container_width=True, key="chart_mensal_home")
+        
+        st.markdown("---")
         
         # Tabela mensal
         df_month_display = df_mensal.copy()
@@ -499,10 +785,10 @@ with tab5:
                     height=400,
                     key="editor_codigos_home",
                     column_config={
-                        "CFOP": st.column_config.TextColumn(
+                        "CFOP": st.column_config.NumberColumn(
                             "CFOP",
                             help="Código Fiscal de Operações e Prestações",
-                            max_chars=4,
+                            format="%d",
                             required=True
                         ),
                         "COD_NATUREZA_OP": st.column_config.TextColumn(
@@ -514,6 +800,11 @@ with tab5:
                             "DESCRICAO_NATUREZA_OP",
                             help="Descrição da Natureza da Operação",
                             required=True
+                        ),
+                        "RESUMO DE OPERAÇÃO": st.column_config.TextColumn(
+                            "RESUMO DE OPERAÇÃO",
+                            help="Resumo da Operação Fiscal",
+                            required=False
                         )
                     }
                 )
@@ -549,10 +840,293 @@ with tab5:
                 else:
                     st.success("✅ Nenhuma alteração pendente")
             
+            # Tabela de CFOPs não encontrados nos dados processados
+            st.markdown("---")
+            st.subheader("🔍 CFOPs Não Encontrados na Tabela de Códigos")
+            
+            with st.expander("📋 Ver CFOPs sem correspondência", expanded=False):
+                st.markdown("""
+                Esta tabela mostra os **CFOPs** que aparecem nos dados processados mas **não estão cadastrados** 
+                na tabela de Códigos Mastersaf. Estes registros ficam marcados como "Não encontrado".
+                """)
+                
+                # Carregar dados consolidados de CFOPs não encontrados
+                df_cfops_nao_encontrados = load_consolidated_cfops_nao_encontrados(ano_sel)
+                
+                if not df_cfops_nao_encontrados.empty:
+                    # Aplicar filtro de planta se necessário
+                    if planta_option != "Todas":
+                        df_cfops_nao_encontrados = df_cfops_nao_encontrados[
+                            df_cfops_nao_encontrados['planta'] == planta_option
+                        ]
+                    
+                    if not df_cfops_nao_encontrados.empty:
+                        # Preparar dados para exibição
+                        df_display = df_cfops_nao_encontrados.copy()
+                        
+                        # Aplicar divisor nos valores monetários
+                        if 'valor_icms' in df_display.columns:
+                            df_display['valor_icms'] = df_display['valor_icms'] / divisor
+                        if 'base_icms_1' in df_display.columns:
+                            df_display['base_icms_1'] = df_display['base_icms_1'] / divisor
+                        
+                        # Selecionar colunas relevantes para exibição
+                        colunas_exibir = ['cfop', 'planta', 'valor_icms', 'base_icms_1', 'quantidade']
+                        if 'qtd_notas' in df_display.columns:
+                            colunas_exibir.append('qtd_notas')
+                        if 'qtd_fornecedores' in df_display.columns:
+                            colunas_exibir.append('qtd_fornecedores')
+                        if 'qtd_produtos' in df_display.columns:
+                            colunas_exibir.append('qtd_produtos')
+                        if 'entrada_saida' in df_display.columns:
+                            colunas_exibir.append('entrada_saida')
+                        if 'primeira_ocorrencia' in df_display.columns:
+                            colunas_exibir.append('primeira_ocorrencia')
+                        if 'ultima_ocorrencia' in df_display.columns:
+                            colunas_exibir.append('ultima_ocorrencia')
+                        
+                        # Filtrar apenas colunas que existem
+                        colunas_exibir = [col for col in colunas_exibir if col in df_display.columns]
+                        df_display = df_display[colunas_exibir]
+                        
+                        # Renomear colunas para melhor visualização
+                        label_icms = f"Valor ICMS ({sufixo})" if sufixo else "Valor ICMS"
+                        label_base = f"Base ICMS ({sufixo})" if sufixo else "Base ICMS"
+                        
+                        rename_map = {
+                            'cfop': 'CFOP',
+                            'planta': 'Planta',
+                            'valor_icms': label_icms,
+                            'base_icms_1': label_base,
+                            'quantidade': 'Quantidade',
+                            'qtd_notas': 'Qtd Notas',
+                            'qtd_fornecedores': 'Qtd Fornecedores',
+                            'qtd_produtos': 'Qtd Produtos',
+                            'entrada_saida': 'Tipo',
+                            'primeira_ocorrencia': 'Primeira Ocorrência',
+                            'ultima_ocorrencia': 'Última Ocorrência'
+                        }
+                        df_display = df_display.rename(columns=rename_map)
+                        
+                        st.warning(f"⚠️ Encontrados **{len(df_display)} CFOPs únicos** sem cadastro na tabela de códigos")
+                        
+                        # Exibir tabela
+                        st.dataframe(
+                            df_display,
+                            use_container_width=True,
+                            height=400,
+                            hide_index=True
+                        )
+                        
+                        # Botões de ação
+                        col1, col2, col3 = st.columns([1, 1, 1])
+                        
+                        with col1:
+                            csv_data = df_display.to_csv(index=False).encode('utf-8-sig')
+                            st.download_button(
+                                label="📥 Exportar CSV",
+                                data=csv_data,
+                                file_name=f"cfops_nao_encontrados_{ano_sel}_{planta_option}.csv",
+                                mime="text/csv",
+                                use_container_width=True,
+                                key="download_cfops_nao_encontrados"
+                            )
+                        
+                        with col2:
+                            if st.button("➕ Adicionar à Tabela de Códigos", 
+                                        use_container_width=True, 
+                                        type="primary",
+                                        key="btn_add_cfops"):
+                                st.session_state['mostrar_editor_cfops'] = True
+                                st.rerun()
+                        
+                        # Editor para adicionar CFOPs não encontrados
+                        if st.session_state.get('mostrar_editor_cfops', False):
+                            st.markdown("---")
+                            st.markdown("### ✏️ Editor de Novos Códigos")
+                            st.info("💡 Preencha as informações para os CFOPs não encontrados abaixo:")
+                            
+                            # Preparar DataFrame para edição
+                            cfops_unicos = df_cfops_nao_encontrados['cfop'].unique()
+                            
+                            # Criar DataFrame no formato da tabela de códigos
+                            df_novos_codigos = pd.DataFrame({
+                                'CFOP': cfops_unicos,
+                                'COD_NATUREZA_OP': [''] * len(cfops_unicos),
+                                'DESCRICAO_NATUREZA_OP': [''] * len(cfops_unicos),
+                                'RESUMO DE OPERAÇÃO': [''] * len(cfops_unicos)
+                            })
+                            
+                            # Ordenar por CFOP
+                            df_novos_codigos = df_novos_codigos.sort_values('CFOP').reset_index(drop=True)
+                            
+                            # Editor de dados
+                            df_editado = st.data_editor(
+                                df_novos_codigos,
+                                use_container_width=True,
+                                height=400,
+                                num_rows="fixed",
+                                key="editor_novos_cfops",
+                                column_config={
+                                    "CFOP": st.column_config.NumberColumn(
+                                        "CFOP",
+                                        help="Código Fiscal - Não editável",
+                                        disabled=True,
+                                        format="%d"
+                                    ),
+                                    "COD_NATUREZA_OP": st.column_config.TextColumn(
+                                        "Código Natureza Op",
+                                        help="Digite o código da natureza da operação",
+                                        required=True,
+                                        max_chars=10
+                                    ),
+                                    "DESCRICAO_NATUREZA_OP": st.column_config.TextColumn(
+                                        "Descrição Natureza Op",
+                                        help="Digite a descrição da natureza da operação",
+                                        required=True,
+                                        max_chars=200
+                                    ),
+                                    "RESUMO DE OPERAÇÃO": st.column_config.TextColumn(
+                                        "Resumo de Operação",
+                                        help="Digite o resumo da operação (opcional)",
+                                        required=False,
+                                        max_chars=200
+                                    )
+                                }
+                            )
+                            
+                            # Verificar se há dados preenchidos
+                            linhas_preenchidas = df_editado[
+                                (df_editado['COD_NATUREZA_OP'].str.strip() != '') & 
+                                (df_editado['DESCRICAO_NATUREZA_OP'].str.strip() != '')
+                            ]
+                            
+                            st.info(f"📝 {len(linhas_preenchidas)} de {len(df_editado)} CFOPs preenchidos")
+                            
+                            # Botões de ação
+                            col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+                            
+                            with col_btn1:
+                                if st.button("❌ Cancelar", use_container_width=True):
+                                    st.session_state['mostrar_editor_cfops'] = False
+                                    st.rerun()
+                            
+                            with col_btn2:
+                                if st.button("💾 Salvar na Tabela de Códigos", 
+                                           use_container_width=True, 
+                                           type="primary",
+                                           disabled=len(linhas_preenchidas) == 0):
+                                    try:
+                                        # Carregar tabela existente
+                                        codigos_path = Path("data_raw") / "Códigos Mastersaf e Sapiens.xlsx"
+                                        
+                                        if codigos_path.exists():
+                                            df_codigos_existente = pd.read_excel(codigos_path)
+                                            
+                                            # Filtrar apenas linhas preenchidas
+                                            df_para_adicionar = linhas_preenchidas.copy()
+                                            
+                                            # Converter CFOP para int
+                                            df_para_adicionar['CFOP'] = df_para_adicionar['CFOP'].astype(int)
+                                            
+                                            # Verificar se algum CFOP já existe
+                                            cfops_existentes = df_codigos_existente['CFOP'].values
+                                            cfops_duplicados = df_para_adicionar[
+                                                df_para_adicionar['CFOP'].isin(cfops_existentes)
+                                            ]['CFOP'].tolist()
+                                            
+                                            if cfops_duplicados:
+                                                st.warning(f"⚠️ Os seguintes CFOPs já existem na tabela: {cfops_duplicados}")
+                                                st.info("Apenas os CFOPs novos serão adicionados.")
+                                                df_para_adicionar = df_para_adicionar[
+                                                    ~df_para_adicionar['CFOP'].isin(cfops_existentes)
+                                                ]
+                                            
+                                            if not df_para_adicionar.empty:
+                                                # Concatenar com tabela existente
+                                                df_final = pd.concat([df_codigos_existente, df_para_adicionar], 
+                                                                    ignore_index=True)
+                                                
+                                                # Ordenar por CFOP
+                                                df_final = df_final.sort_values('CFOP').reset_index(drop=True)
+                                                
+                                                # Fazer backup do arquivo original
+                                                backup_path = codigos_path.parent / f"Códigos Mastersaf e Sapiens_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                                                import shutil
+                                                shutil.copy2(codigos_path, backup_path)
+                                                
+                                                # Salvar arquivo atualizado
+                                                df_final.to_excel(codigos_path, index=False, engine='openpyxl')
+                                                
+                                                st.success(f"✅ {len(df_para_adicionar)} CFOPs adicionados com sucesso!")
+                                                st.info(f"📁 Backup criado em: {backup_path.name}")
+                                                st.balloons()
+                                                
+                                                # Limpar estado e recarregar
+                                                st.session_state['mostrar_editor_cfops'] = False
+                                                
+                                                # Sugerir reprocessamento
+                                                st.warning("🔄 **Importante:** Execute a extração novamente para atualizar os dados com os novos códigos!")
+                                                
+                                                # Esperar 2 segundos e recarregar
+                                                import time
+                                                time.sleep(2)
+                                                st.rerun()
+                                            else:
+                                                st.info("ℹ️ Nenhum CFOP novo para adicionar.")
+                                        else:
+                                            st.error("❌ Arquivo de códigos não encontrado!")
+                                    
+                                    except Exception as e:
+                                        st.error(f"❌ Erro ao salvar: {str(e)}")
+                                        st.exception(e)
+                    else:
+                        st.success("✅ Todos os CFOPs da planta selecionada foram encontrados na tabela de códigos!")
+                else:
+                    st.success("✅ Todos os CFOPs foram encontrados na tabela de códigos!")
+        
         except Exception as e:
-            st.error(f"❌ Erro ao carregar arquivo: {str(e)}")
+            st.error(f"❌ Erro ao carregar dados de CFOPs não encontrados: {str(e)}")
             st.exception(e)
     else:
         st.warning("⚠️ Arquivo de códigos não encontrado")
         st.info(f"Esperado em: `{codigos_path}`")
         st.markdown("💡 Faça upload do arquivo na página **Extração → Códigos Mastersaf**")
+
+# Botão de exportação consolidada no final da página
+st.markdown("---")
+st.markdown("### 📥 Exportação de Dados")
+
+col_export1, col_export2, col_export3 = st.columns([1, 2, 1])
+
+with col_export2:
+    if st.button("📥 Exportar Tudo para Excel", use_container_width=True, type="primary", key="btn_export_final"):
+        try:
+            import os
+            from io import BytesIO
+            
+            # Caminho Downloads do usuário
+            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+            filename = f"Fiscal_Consolidado_{ano_sel}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            filepath = os.path.join(downloads_path, filename)
+            
+            # Criar Excel com múltiplas abas
+            with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+                if not df_mensal.empty:
+                    df_mensal.to_excel(writer, sheet_name='Mensal', index=False)
+                if not df_fornecedores.empty:
+                    df_fornecedores.to_excel(writer, sheet_name='Fornecedores', index=False)
+                if not df_produtos.empty:
+                    df_produtos.to_excel(writer, sheet_name='Produtos', index=False)
+                if not df_cfop.empty:
+                    df_cfop.to_excel(writer, sheet_name='CFOP', index=False)
+            
+            st.success(f"✅ Arquivo salvo em: `{filepath}`")
+            st.info(f"📊 Exportadas {len([d for d in [df_mensal, df_fornecedores, df_produtos, df_cfop] if not d.empty])} abas")
+            st.balloons()
+            
+        except Exception as e:
+            st.error(f"❌ Erro ao exportar: {str(e)}")
+
+st.markdown("")
+st.caption("Sistema de Análise Fiscal Stellantis - Desenvolvido pela Equipe Fiscal")
