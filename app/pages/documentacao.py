@@ -248,7 +248,7 @@ if indice_selecionado == "👥 Equipe do Projeto":
                         st.rerun()
         
         # Expander para perfil profissional - ABERTO POR PADRÃO
-        with st.expander("👨‍💼 Perfil Profissional", expanded=True):
+        with st.expander("👨‍💼 Perfil Profissional", expanded=False):
             if dados_equipe['lauro']['cargo'] and dados_equipe['lauro']['empresa']:
                 st.write(f"💼 **{dados_equipe['lauro']['cargo']}** na **{dados_equipe['lauro']['empresa']}**")
             elif dados_equipe['lauro']['cargo']:
@@ -347,7 +347,7 @@ if indice_selecionado == "👥 Equipe do Projeto":
                         st.rerun()
         
         # Expander para perfil profissional - ABERTO POR PADRÃO
-        with st.expander("👨‍💻 Perfil Profissional", expanded=True):
+        with st.expander("👨‍💻 Perfil Profissional", expanded=False):
             if dados_equipe['hudson']['cargo'] and dados_equipe['hudson']['empresa']:
                 st.write(f"💼 **{dados_equipe['hudson']['cargo']}** na **{dados_equipe['hudson']['empresa']}**")
             elif dados_equipe['hudson']['cargo']:
@@ -409,7 +409,7 @@ elif indice_selecionado == "🎯 Visão Geral do Sistema":
     
     st.markdown("---")
     
-    with st.expander("📋 Funcionalidades Principais", expanded=True):
+    with st.expander("📋 Funcionalidades Principais", expanded=False):
         st.markdown("""
         ### 1️⃣ Extração de Dados
         - **Upload Múltiplo:** Envie vários arquivos Excel de uma vez
@@ -508,7 +508,7 @@ elif indice_selecionado == "🏗️ Arquitetura e Estrutura":
     
     st.markdown("---")
     
-    with st.expander("📁 Estrutura de Diretórios", expanded=True):
+    with st.expander("📁 Estrutura de Diretórios", expanded=False):
         st.markdown("""
         ```
         Fiscal/
@@ -547,7 +547,7 @@ elif indice_selecionado == "🏗️ Arquitetura e Estrutura":
         ```
         """)
     
-    with st.expander("🔄 Fluxo de Dados", expanded=True):
+    with st.expander("🔄 Fluxo de Dados", expanded=False):
         st.markdown("""
         ### 1️⃣ Upload (Extração → Tab 1)
         ```
@@ -636,7 +636,7 @@ elif indice_selecionado == "📥 Guia de Extração de Dados":
     
     st.markdown("---")
     
-    with st.expander("📤 Passo 1: Upload de Arquivos", expanded=True):
+    with st.expander("📤 Passo 1: Upload de Arquivos", expanded=False):
         st.markdown("""
         ### Como fazer upload:
         
@@ -667,7 +667,7 @@ elif indice_selecionado == "📥 Guia de Extração de Dados":
         - Planta pode ter qualquer nome (ex: "Nova Planta XYZ")
         """)
     
-    with st.expander("⚙️ Passo 2: Processar Dados", expanded=True):
+    with st.expander("⚙️ Passo 2: Processar Dados", expanded=False):
         st.markdown("""
         ### Como processar:
         
@@ -750,7 +750,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
     
     st.markdown("---")
     
-    with st.expander("💰 Fator de Conversão", expanded=True):
+    with st.expander("💰 Fator de Conversão", expanded=False):
         st.markdown("""
         ### Seletor de Unidade Monetária
         
@@ -775,7 +775,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         ```
         """)
     
-    with st.expander("🏭 Filtro de Plantas", expanded=True):
+    with st.expander("🏭 Filtro de Plantas", expanded=False):
         st.markdown("""
         ### Seleção de Planta para Análise
         
@@ -797,7 +797,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Métricas recalculadas em tempo real
         """)
     
-    with st.expander("🔍 Filtros Avançados (Sidebar)", expanded=True):
+    with st.expander("🔍 Filtros Avançados (Sidebar)", expanded=False):
         st.markdown("""
         ### 11 Filtros Disponíveis no Sidebar
         
@@ -855,7 +855,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Filtros se aplicam a todos os DataFrames simultaneamente
         """)
     
-    with st.expander("📊 Métricas Principais", expanded=True):
+    with st.expander("📊 Métricas Principais", expanded=False):
         st.markdown("""
         ### 4 Cards de Métricas (Topo)
         
@@ -878,7 +878,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Após aplicação de filtros
         """)
     
-    with st.expander("📈 Tab 1: Mensal", expanded=True):
+    with st.expander("📈 Tab 1: Mensal", expanded=False):
         st.markdown("""
         ### Gráficos de Evolução Temporal
         
@@ -900,7 +900,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Download Excel disponível
         """)
     
-    with st.expander("🏢 Tab 2: Fornecedores", expanded=True):
+    with st.expander("🏢 Tab 2: Fornecedores", expanded=False):
         st.markdown("""
         ### Análise por Fornecedor
         
@@ -924,7 +924,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Download Excel
         """)
     
-    with st.expander("📦 Tab 3: Produtos", expanded=True):
+    with st.expander("📦 Tab 3: Produtos", expanded=False):
         st.markdown("""
         ### Análise por Produto
         
@@ -939,7 +939,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Informações de quantidade e notas fiscais
         """)
     
-    with st.expander("🔢 Tab 4: CFOP", expanded=True):
+    with st.expander("🔢 Tab 4: CFOP", expanded=False):
         st.markdown("""
         ### Análise por Código Fiscal
         
@@ -951,7 +951,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         - Download Excel
         """)
     
-    with st.expander("📋 Tab 5: Códigos Mastersaf", expanded=True):
+    with st.expander("📋 Tab 5: Códigos Mastersaf", expanded=False):
         st.markdown("""
         ### Gestão da Tabela de Códigos
         
@@ -979,7 +979,7 @@ elif indice_selecionado == "🏠 Dashboard Home":
         Ver seção "📋 Gestão de Códigos CFOP" para detalhes completos.
         """)
     
-    with st.expander("📥 Botão de Exportação (Final da Página)", expanded=True):
+    with st.expander("📥 Botão de Exportação (Final da Página)", expanded=False):
         st.markdown("""
         ### Exportação Consolidada Multi-Abas
         
@@ -1018,7 +1018,7 @@ elif indice_selecionado == "📊 Análise Fiscal Detalhada":
     
     st.markdown("---")
     
-    with st.expander("🎚️ Filtros Principais", expanded=True):
+    with st.expander("🎚️ Filtros Principais", expanded=False):
         st.markdown("""
         ### Filtros Obrigatórios:
         
@@ -1038,7 +1038,7 @@ elif indice_selecionado == "📊 Análise Fiscal Detalhada":
         - Usa `st.date_input` com min/max automáticos
         """)
     
-    with st.expander("🔍 Filtros Opcionais (15+ Filtros)", expanded=True):
+    with st.expander("🔍 Filtros Opcionais (15+ Filtros)", expanded=False):
         st.markdown("""
         ### Combine múltiplos filtros para análises detalhadas:
         
@@ -1101,7 +1101,7 @@ elif indice_selecionado == "📊 Análise Fiscal Detalhada":
         ```
         """)
     
-    with st.expander("📈 Visualizações e Tabs", expanded=True):
+    with st.expander("📈 Visualizações e Tabs", expanded=False):
         st.markdown("""
         ### 5 Tabs de Análise:
         
@@ -1168,7 +1168,7 @@ elif indice_selecionado == "📋 Gestão de Códigos CFOP":
     
     st.markdown("---")
     
-    with st.expander("📁 Tabela de Códigos Mastersaf", expanded=True):
+    with st.expander("📁 Tabela de Códigos Mastersaf", expanded=False):
         st.markdown("""
         ### Arquivo: `data_raw/Códigos Mastersaf e Sapiens.xlsx`
         
@@ -1188,7 +1188,7 @@ elif indice_selecionado == "📋 Gestão de Códigos CFOP":
         - Modo Visualizar e Modo Editar
         """)
     
-    with st.expander("👁️ Modo Visualizar", expanded=True):
+    with st.expander("👁️ Modo Visualizar", expanded=False):
         st.markdown("""
         ### Visualização da Tabela de Códigos
         
@@ -1212,7 +1212,7 @@ elif indice_selecionado == "📋 Gestão de Códigos CFOP":
         - UTF-8 encoding para acentos
         """)
     
-    with st.expander("✏️ Modo Editar", expanded=True):
+    with st.expander("✏️ Modo Editar", expanded=False):
         st.markdown("""
         ### Editor Interativo de Códigos
         
@@ -1260,7 +1260,7 @@ elif indice_selecionado == "📋 Gestão de Códigos CFOP":
         - Novos códigos só serão aplicados após reprocessamento
         """)
     
-    with st.expander("🔍 CFOPs Não Encontrados", expanded=True):
+    with st.expander("🔍 CFOPs Não Encontrados", expanded=False):
         st.markdown("""
         ### Identificação e Gestão de CFOPs sem Cadastro
         
@@ -1299,7 +1299,7 @@ elif indice_selecionado == "📋 Gestão de Códigos CFOP":
         - Hide_index para limpeza visual
         """)
     
-    with st.expander("➕ Adicionar CFOPs à Tabela", expanded=True):
+    with st.expander("➕ Adicionar CFOPs à Tabela", expanded=False):
         st.markdown("""
         ### Processo de Adição de Novos Códigos
         
@@ -1374,7 +1374,7 @@ elif indice_selecionado == "📋 Gestão de Códigos CFOP":
         ```
         """)
     
-    with st.expander("🔄 Reprocessamento Após Adição", expanded=True):
+    with st.expander("🔄 Reprocessamento Após Adição", expanded=False):
         st.markdown("""
         ### Por que reprocessar?
         
@@ -1430,7 +1430,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
     
     st.markdown("---")
     
-    with st.expander("🎚️ Filtros Principais", expanded=True):
+    with st.expander("🎚️ Filtros Principais", expanded=False):
         st.markdown("""
         ### Filtros Obrigatórios:
         
@@ -1451,7 +1451,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         - Use para análises mensais ou trimestrais
         """)
     
-    with st.expander("🔍 Filtros Opcionais (9 Filtros)", expanded=True):
+    with st.expander("🔍 Filtros Opcionais (9 Filtros)", expanded=False):
         st.markdown("""
         ### Combine múltiplos filtros para análises específicas:
         
@@ -1509,7 +1509,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("📈 Visualizações Disponíveis", expanded=True):
+    with st.expander("📈 Visualizações Disponíveis", expanded=False):
         st.markdown("""
         ### 5 Tabs de Análise:
         
@@ -1598,7 +1598,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
     
     st.markdown("---")
     
-    with st.expander("🔄 Sistema de Conversão BR→US", expanded=True):
+    with st.expander("🔄 Sistema de Conversão BR→US", expanded=False):
         st.markdown("""
         ### Problema:
         Arquivos Excel brasileiros usam formato `1.234.567,89` enquanto Python usa `1234567.89`
@@ -1635,7 +1635,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ✅ Robusto: Trata valores inválidos como NaN
         """)
     
-    with st.expander("📦 Sistema de Cache", expanded=True):
+    with st.expander("📦 Sistema de Cache", expanded=False):
         st.markdown("""
         ### Implementação:
         
@@ -1666,7 +1666,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         - **Reprocessar:** Gera novo Parquet (cache invalida automaticamente)
         """)
     
-    with st.expander("🎯 Sistema de Detecção Automática", expanded=True):
+    with st.expander("🎯 Sistema de Detecção Automática", expanded=False):
         st.markdown("""
         ### Planta e Ano:
         
@@ -1692,7 +1692,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ✅ Warnings se houver discrepância
         """)
     
-    with st.expander("🔐 Integridade de Dados", expanded=True):
+    with st.expander("🔐 Integridade de Dados", expanded=False):
         st.markdown("""
         ### Garantias Implementadas:
         
@@ -1767,6 +1767,11 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         6. **Validação:** Testes com dados reais (209.720 registros)
         7. **Documentação:** Guias completos de uso
         """)
+
+# ==========================================
+# SEÇÃO 7: OTIMIZAÇÕES DE PERFORMANCE
+# ==========================================
+elif indice_selecionado == "🚀 Otimizações de Performance":
     st.header("🚀 Otimizações de Performance")
     
     st.markdown("""
@@ -1776,7 +1781,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
     
     st.markdown("---")
     
-    with st.expander("📦 Otimização 1: Formato Parquet com PyArrow", expanded=True):
+    with st.expander("📦 Otimização 1: Formato Parquet com PyArrow", expanded=False):
         st.markdown("""
         ### Apache Parquet: Formato Colunar Otimizado
         
@@ -1828,7 +1833,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         - Usado por Google, Facebook, Netflix
         """)
     
-    with st.expander("🗂️ Otimização 2: Estrutura Hierárquica de Dados", expanded=True):
+    with st.expander("🗂️ Otimização 2: Estrutura Hierárquica de Dados", expanded=False):
         st.markdown("""
         ### Separação por Planta e Ano
         
@@ -1904,7 +1909,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("💾 Otimização 3: Sistema de Cache Multi-Nível", expanded=True):
+    with st.expander("💾 Otimização 3: Sistema de Cache Multi-Nível", expanded=False):
         st.markdown("""
         ### Streamlit Cache + Dados Persistentes
         
@@ -1970,7 +1975,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("⚡ Otimização 4: Engine Calamine para Leitura de Excel", expanded=True):
+    with st.expander("⚡ Otimização 4: Engine Calamine para Leitura de Excel", expanded=False):
         st.markdown("""
         ### python-calamine: Engine em Rust
         
@@ -2038,7 +2043,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("📊 Otimização 5: Filtro Seletivo de Colunas", expanded=True):
+    with st.expander("📊 Otimização 5: Filtro Seletivo de Colunas", expanded=False):
         st.markdown("""
         ### usecols: Apenas o Essencial
         
@@ -2125,7 +2130,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("🔄 Otimização 6: Processamento Incremental", expanded=True):
+    with st.expander("🔄 Otimização 6: Processamento Incremental", expanded=False):
         st.markdown("""
         ### Modo Incremental: Inteligência na Extração
         
@@ -2213,15 +2218,15 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         modo = st.radio(
             "Modo de Processamento",
             ["incremental", "completo"],
-            help="""
+            help='''
             Incremental: Apenas novos/modificados (rápido)
             Completo: Reprocessa tudo (seguro)
-            """
+            '''
         )
         ```
         """)
     
-    with st.expander("🎯 Otimização 7: Conversão Vetorizada", expanded=True):
+    with st.expander("🎯 Otimização 7: Conversão Vetorizada", expanded=False):
         st.markdown("""
         ### Pandas Vetorização: NumPy Power
         
@@ -2325,7 +2330,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("💾 Otimização 8: Batch Write + Consolidação", expanded=True):
+    with st.expander("💾 Otimização 8: Batch Write + Consolidação", expanded=False):
         st.markdown("""
         ### Write Único vs Writes Múltiplos
         
@@ -2434,7 +2439,7 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         ```
         """)
     
-    with st.expander("📈 Resumo Geral de Performance", expanded=True):
+    with st.expander("📈 Resumo Geral de Performance", expanded=False):
         st.markdown("""
         ### Ganhos Acumulados por Otimização
         
@@ -2669,8 +2674,6 @@ elif indice_selecionado == "⚙️ Funcionalidades Técnicas":
         - 📊 Histórico de extrações
         - ⚡ Performance por planta/ano
         - 🎯 Identificação de gargalos
-        """)
-        ```
         """)
 
 # ==========================================
